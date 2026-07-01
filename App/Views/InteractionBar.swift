@@ -35,7 +35,9 @@ struct InteractionBar: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.tint)
             }
-            if let onViewThread = actions.onViewThread, (post.replyCount ?? 0) > 0 || post.isReply {
+            if let onViewThread = actions.onViewThread {
+                // Reply counts are lazy (nil until "Load counts"), so always offer the
+                // thread — opening a post with no replies just shows the post itself.
                 Button("View thread", action: onViewThread)
                     .buttonStyle(.plain)
                     .foregroundStyle(.tint)

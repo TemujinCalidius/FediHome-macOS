@@ -71,10 +71,14 @@ public struct FediPost: Codable, Sendable, Identifiable, Equatable {
     /// The @-mention a reply prefixes / the server strips if duplicated.
     public var replyMentionHandle: String { fediHandle }
 
-    /// The apId a write action (like / boost / reply) must target. Boosted feed rows
-    /// carry a synthetic `boost:<actorUri>:<originalApId>`; the server resolves that for
-    /// counts/conversation but NOT for interactions, so the client must send the original.
-    /// Mirrors the server's `^boost:.*:(https?://.*)$` (greedy → the last http(s) segment).
+    /// The **original** post apId, resolving a boosted row's synthetic
+    /// `boost:<actorUri>:<originalApId>` (mirrors the server's `^boost:.*:(https?://.*)$`,
+    /// greedy → the last http(s) segment).
+    ///
+    /// Use this for **reply threading** (`inReplyTo`) and **sharing** — where the original
+    /// URL is what matters. Do NOT use it for like/boost: the server persists
+    /// `likedByMe`/`boostedByMe` keyed by the *row's* apId, so those must send `apId`
+    /// (the synthetic id) or the state won't stick to the boost row on reload.
     public var interactionApId: String {
         guard apId.hasPrefix("boost:") else { return apId }
         let pattern = "^boost:.*:(https?://.*)$"

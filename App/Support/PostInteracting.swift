@@ -17,9 +17,9 @@ extension PostInteracting {
         posts[i].likedByMe.toggle()
         do {
             if previous {
-                try await client.unlike(postApId: post.interactionApId, targetInbox: post.fallbackInboxURL)
+                try await client.unlike(postApId: post.apId, targetInbox: post.fallbackInboxURL)
             } else {
-                try await client.like(postApId: post.interactionApId, targetInbox: post.fallbackInboxURL)
+                try await client.like(postApId: post.apId, targetInbox: post.fallbackInboxURL)
             }
         } catch {
             if let j = index(of: post) { posts[j].likedByMe = previous } // revert
@@ -33,9 +33,9 @@ extension PostInteracting {
         posts[i].boostedByMe.toggle()
         do {
             if previous {
-                try await client.unboost(postApId: post.interactionApId, targetInbox: post.fallbackInboxURL)
+                try await client.unboost(postApId: post.apId, targetInbox: post.fallbackInboxURL)
             } else {
-                try await client.boost(postApId: post.interactionApId, targetInbox: post.fallbackInboxURL)
+                try await client.boost(postApId: post.apId, targetInbox: post.fallbackInboxURL)
             }
         } catch {
             if let j = index(of: post) { posts[j].boostedByMe = previous } // revert
