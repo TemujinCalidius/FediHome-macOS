@@ -24,12 +24,13 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(page.posts.count, 2)
         XCTAssertEqual(page.nextCursor, "2026-07-01T09:00:00Z")
 
+        let base = URL(string: "https://fedihome.social")!
         let first = page.posts[0]
         XCTAssertEqual(first.fediHandle, "@alice@mastodon.social")
         XCTAssertEqual(first.authorName, "Alice")
         XCTAssertFalse(first.isBoost)
-        XCTAssertEqual(first.media.count, 1)
-        XCTAssertEqual(first.media.first?.kind, .image)
+        XCTAssertEqual(first.media(relativeTo: base).count, 1)
+        XCTAssertEqual(first.media(relativeTo: base).first?.kind, .image)
         XCTAssertEqual(first.likeCount, 3)
         // Fractional-seconds date parsed.
         XCTAssertEqual(first.publishedAt, FediDate.parse("2026-07-01T10:30:00.735Z"))
@@ -39,7 +40,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertTrue(second.isReply)
         XCTAssertEqual(second.authorName, "bob") // displayName null → username fallback
         XCTAssertNil(second.likeCount)
-        XCTAssertTrue(second.media.isEmpty)
+        XCTAssertTrue(second.media(relativeTo: base).isEmpty)
         // Plain (no fractional seconds) date parsed via the lenient fallback.
         XCTAssertEqual(second.publishedAt, FediDate.parse("2026-07-01T09:00:00Z"))
     }

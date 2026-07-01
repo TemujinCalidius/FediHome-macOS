@@ -4,6 +4,8 @@ import FediHomeKit
 struct FeedView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = FeedViewModel()
+    @State private var replyTarget: FediPost?
+    @State private var threadTarget: FediPost?
 
     var body: some View {
         content
@@ -19,6 +21,21 @@ struct FeedView: View {
             }
             .task {
                 if model.posts.isEmpty { await model.loadFirst(session: session) }
+            }
+            .sheet(item: $replyTarget) { target in
+                ReplyComposerView(post: target) { text, crosspost in
+                    let ok = await model.sendReply(to: target, text: text, crosspostBluesky: crosspost, session: session)
+                    if ok { await model.loadCounts(target, session: session) } // reflect the new reply count
+                    return ok
+                }
+            }
+            .sheet(item: $threadTarget) { target in
+                ThreadView(rootPost: target, baseURL: session.resolvedBaseURL)
+            }
+            .alert("Action failed", isPresented: actionErrorBinding) {
+                Button("OK") { model.actionError = nil }
+            } message: {
+                Text(model.actionError ?? "")
             }
     }
 
@@ -45,7 +62,7 @@ struct FeedView: View {
     private var list: some View {
         List {
             ForEach(model.posts) { post in
-                PostRowView(post: post)
+                PostRowView(post: post, baseURL: session.resolvedBaseURL, actions: actions(for: post))
                     .task { await model.loadMoreIfNeeded(current: post, session: session) }
             }
             if model.isLoadingMore {
@@ -58,5 +75,19 @@ struct FeedView: View {
         }
         .listStyle(.inset)
         .refreshable { await model.loadFirst(session: session) }
+    }
+
+    private func actions(for post: FediPost) -> PostRowActions {
+        PostRowActions(
+            onToggleLike: { Task { await model.toggleLike(post, session: session) } },
+            onToggleBoost: { Task { await model.toggleBoost(post, session: session) } },
+            onReply: { replyTarget = post },
+            onLoadCounts: { Task { await model.loadCounts(post, session: session) } },
+            onViewThread: { threadTarget = post }
+        )
+    }
+
+    private var actionErrorBinding: Binding<Bool> {
+        Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })
     }
 }

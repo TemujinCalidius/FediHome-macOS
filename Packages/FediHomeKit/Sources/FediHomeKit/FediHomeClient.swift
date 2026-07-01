@@ -1,8 +1,8 @@
 import Foundation
 
-/// The authenticated read client for a single FediHome instance. Holds the base
-/// URL + bearer token and exposes typed calls for the read API. An `actor` so it's
-/// safe to share across the app; UI-agnostic so iOS reuses it verbatim.
+/// The authenticated client for a single FediHome instance. Holds the base URL +
+/// bearer token and exposes typed read and write calls for the app API. An `actor`
+/// so it's safe to share across the app; UI-agnostic so iOS reuses it verbatim.
 public actor FediHomeClient {
     public let baseURL: URL
     private let token: String
@@ -43,15 +43,91 @@ public actor FediHomeClient {
         try await get("/api/notifications")
     }
 
+    /// `POST /api/fedi-post-counts` — lazily fetch a post's like/boost/reply counts
+    /// (`read` scope). `postId` is the local `FediPost.id`, not the apId.
+    public func postCounts(postId: String) async throws -> PostCounts {
+        try await postJSON("/api/fedi-post-counts", body: ["postId": postId])
+    }
+
+    /// `GET /api/conversation?postId=` — the full thread for a post (`read` scope).
+    public func conversation(postId: String) async throws -> ConversationThread {
+        try await get("/api/conversation", query: [URLQueryItem(name: "postId", value: postId)])
+    }
+
+    // MARK: Write API — interactions (`interact` scope) via `POST /api/admin`
+
+    public func like(postApId: String, targetInbox: String? = nil) async throws {
+        try await admin(action: "like", ["postApId": postApId, "targetInbox": targetInbox])
+    }
+
+    public func unlike(postApId: String, targetInbox: String? = nil) async throws {
+        try await admin(action: "unlike", ["postApId": postApId, "targetInbox": targetInbox])
+    }
+
+    public func boost(postApId: String, targetInbox: String? = nil) async throws {
+        try await admin(action: "boost", ["postApId": postApId, "targetInbox": targetInbox])
+    }
+
+    public func unboost(postApId: String, targetInbox: String? = nil) async throws {
+        try await admin(action: "unboost", ["postApId": postApId, "targetInbox": targetInbox])
+    }
+
+    /// `reply` action. `targetInbox`/`actorUri` help the server address the recipient;
+    /// `mentionHandle` lets it de-duplicate a leading @mention.
+    public func reply(
+        content: String,
+        inReplyTo: String,
+        targetInbox: String? = nil,
+        actorUri: String? = nil,
+        mentionHandle: String? = nil,
+        crosspostBluesky: Bool = false
+    ) async throws {
+        try await admin(action: "reply", [
+            "content": content,
+            "inReplyTo": inReplyTo,
+            "targetInbox": targetInbox,
+            "actorUri": actorUri,
+            "mentionHandle": mentionHandle,
+            "crosspostBluesky": crosspostBluesky ? true : nil,
+        ])
+    }
+
+    /// Dispatches one `POST /api/admin` action, dropping nil fields.
+    private func admin(action: String, _ fields: [String: Any?]) async throws {
+        var body: [String: Any] = ["action": action]
+        for (key, value) in fields { if let value { body[key] = value } }
+        try await postVoid("/api/admin", body: body)
+    }
+
     // MARK: Request plumbing
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = []) async throws -> T {
-        let url = try makeURL(path: path, query: query)
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: try makeURL(path: path, query: query))
         request.httpMethod = "GET"
+        applyDefaults(&request)
+        return try decode(from: try await send(request))
+    }
+
+    private func postJSON<T: Decodable>(_ path: String, body: [String: Any]) async throws -> T {
+        try decode(from: try await send(try makePOST(path: path, body: body)))
+    }
+
+    private func postVoid(_ path: String, body: [String: Any]) async throws {
+        _ = try await send(try makePOST(path: path, body: body))
+    }
+
+    private func makePOST(path: String, body: [String: Any]) throws -> URLRequest {
+        var request = URLRequest(url: try makeURL(path: path, query: []))
+        request.httpMethod = "POST"
+        applyDefaults(&request)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    private func applyDefaults(_ request: inout URLRequest) {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        return try await perform(request)
     }
 
     private func makeURL(path: String, query: [URLQueryItem]) throws -> URL {
@@ -64,7 +140,8 @@ public actor FediHomeClient {
         return url
     }
 
-    private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
+    /// Runs the request and maps HTTP status → `APIError`; returns the 2xx body.
+    private func send(_ request: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
         do {
@@ -75,20 +152,23 @@ public actor FediHomeClient {
         guard let http = response as? HTTPURLResponse else {
             throw APIError.transport("Non-HTTP response")
         }
-
         switch http.statusCode {
         case 200..<300:
-            do {
-                return try decoder.decode(T.self, from: data)
-            } catch {
-                throw APIError.decoding(String(describing: error))
-            }
+            return data
         case 401:
             throw APIError.unauthorized
         case 403:
             throw APIError.insufficientScope(scope: Self.jsonString(data, key: "scope"))
         default:
             throw APIError.http(status: http.statusCode, body: String(data: data, encoding: .utf8))
+        }
+    }
+
+    private func decode<T: Decodable>(from data: Data) throws -> T {
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decoding(String(describing: error))
         }
     }
 

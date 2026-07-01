@@ -13,6 +13,8 @@ final class SessionStore: ObservableObject {
     @Published var account: Account?
     @Published var instanceURLString: String
     @Published var errorMessage: String?
+    /// The connected instance's base URL, for resolving relative media/embed paths.
+    @Published private(set) var baseURL: URL?
 
     /// The authenticated read client, available once connected.
     private(set) var client: FediHomeClient?
@@ -29,6 +31,12 @@ final class SessionStore: ObservableObject {
 
     var isBusy: Bool { phase == .connecting }
 
+    /// The base URL to resolve media against — the connected instance, or a best-effort
+    /// normalization of the entered URL before connecting.
+    var resolvedBaseURL: URL {
+        baseURL ?? InstanceURL.normalize(instanceURLString) ?? URL(string: Self.defaultInstance)!
+    }
+
     /// On launch, silently restore a stored token if `/api/account` still accepts it.
     func restore() async {
         guard phase == .disconnected, client == nil else { return }
@@ -41,6 +49,7 @@ final class SessionStore: ObservableObject {
         do {
             let account = try await client.account()
             self.client = client
+            self.baseURL = instance
             self.account = account
             self.phase = .connected
         } catch APIError.unauthorized {
@@ -71,6 +80,7 @@ final class SessionStore: ObservableObject {
             let client = FediHomeClient(baseURL: canonical, token: token.accessToken)
             let account = try await client.account()
             self.client = client
+            self.baseURL = canonical
             self.account = account
             self.phase = .connected
         } catch is AuthError {
@@ -94,6 +104,7 @@ final class SessionStore: ObservableObject {
         }
         client = nil
         account = nil
+        baseURL = nil
         phase = .disconnected
     }
 

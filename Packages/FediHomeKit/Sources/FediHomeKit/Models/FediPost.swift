@@ -36,15 +36,16 @@ public struct FediPost: Codable, Sendable, Identifiable, Equatable {
     public let embedImage: String?
     public let embedSiteName: String?
 
-    // Cached interaction counts (null = never fetched)
-    public let likeCount: Int?
-    public let boostCount: Int?
-    public let replyCount: Int?
-    public let countsFetchedAt: Date?
+    // Cached interaction counts (null = never fetched). Mutable so the UI can fill them
+    // in from `POST /api/fedi-post-counts` without refetching the whole feed.
+    public var likeCount: Int?
+    public var boostCount: Int?
+    public var replyCount: Int?
+    public var countsFetchedAt: Date?
 
-    // Owner's own interaction state
-    public let likedByMe: Bool
-    public let boostedByMe: Bool
+    // Owner's own interaction state — mutable for optimistic like/boost toggles.
+    public var likedByMe: Bool
+    public var boostedByMe: Bool
 
     // MARK: Convenience
 
@@ -56,36 +57,94 @@ public struct FediPost: Codable, Sendable, Identifiable, Equatable {
         return username
     }
     public var avatarURL: URL? { avatarUrl.flatMap(URL.init(string:)) }
+    public func avatarURL(relativeTo base: URL) -> URL? {
+        avatarUrl.flatMap { MediaURL.resolve($0, relativeTo: base) }
+    }
     public var isBoost: Bool { boostedBy != nil }
     public var isReply: Bool { inReplyTo != nil }
 
-    /// Media as typed pairs for rendering.
+    // MARK: Interaction wiring
+
+    /// Fallback recipient inbox for like/boost/reply. The server prefers to resolve the
+    /// real inbox from `actorUri`; this Mastodon-style guess is only used if that fails.
+    public var fallbackInboxURL: String { "https://\(domain)/users/\(username)/inbox" }
+    /// The @-mention a reply prefixes / the server strips if duplicated.
+    public var replyMentionHandle: String { fediHandle }
+
+    /// The apId a write action (like / boost / reply) must target. Boosted feed rows
+    /// carry a synthetic `boost:<actorUri>:<originalApId>`; the server resolves that for
+    /// counts/conversation but NOT for interactions, so the client must send the original.
+    /// Mirrors the server's `^boost:.*:(https?://.*)$` (greedy → the last http(s) segment).
+    public var interactionApId: String {
+        guard apId.hasPrefix("boost:") else { return apId }
+        let pattern = "^boost:.*:(https?://.*)$"
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: apId, range: NSRange(apId.startIndex..., in: apId)),
+              let range = Range(match.range(at: 1), in: apId) else { return apId }
+        return String(apId[range])
+    }
+
+    /// Canonical link to share (the original post's ActivityPub id, when it's a web URL).
+    public var shareURL: URL? {
+        guard let url = URL(string: interactionApId), let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else { return nil }
+        return url
+    }
+
+    // MARK: Media
+
     public struct Media: Sendable, Equatable, Identifiable {
-        public enum Kind: Sendable, Equatable { case image, video, other(String) }
+        public enum Kind: Sendable, Equatable {
+            case image
+            case video           // inline-playable direct file
+            case link            // external/streaming page — open in browser
+        }
         public let url: URL
         public let kind: Kind
         public var id: String { url.absoluteString }
     }
 
-    public var media: [Media] {
-        zip(mediaUrls, mediaTypes.appendingIfShorter(than: mediaUrls, with: "image"))
-            .compactMap { urlString, type in
-                guard let url = URL(string: urlString) else { return nil }
-                let kind: Media.Kind
-                switch type {
-                case "image": kind = .image
-                case "video": kind = .video
-                default: kind = .other(type)
-                }
-                return Media(url: url, kind: kind)
+    /// Typed media with URLs resolved against the instance `base` (relative proxied
+    /// paths become absolute) and each item classified image / inline-video / link.
+    public func media(relativeTo base: URL) -> [Media] {
+        let types = mediaTypes.count >= mediaUrls.count
+            ? mediaTypes
+            : mediaTypes + Array(repeating: "image", count: mediaUrls.count - mediaTypes.count)
+        return zip(mediaUrls, types).compactMap { rawURL, type in
+            guard let url = MediaURL.resolve(rawURL, relativeTo: base) else { return nil }
+            let kind: Media.Kind
+            switch type {
+            case "image": kind = .image
+            case "video": kind = MediaURL.isDirectVideoFile(url, instanceHost: base.host) ? .video : .link
+            default: kind = .link
             }
+            return Media(url: url, kind: kind)
+        }
     }
-}
 
-private extension Array where Element == String {
-    /// Pads `self` up to `other`'s count so `zip` doesn't drop trailing media.
-    func appendingIfShorter(than other: [String], with fallback: String) -> [String] {
-        guard count < other.count else { return self }
-        return self + Array(repeating: fallback, count: other.count - count)
+    // MARK: Embed
+
+    public struct EmbedCard: Sendable, Equatable {
+        public let url: URL
+        public let title: String?
+        public let description: String?
+        public let imageURL: URL?
+        public let siteName: String?
+        public var displaySite: String { siteName ?? url.host ?? url.absoluteString }
+    }
+
+    /// A link-preview card, shown (matching the web) only when there's an embed URL and
+    /// at least a title or description. `embedImage` is resolved against `base`.
+    public func embedCard(relativeTo base: URL) -> EmbedCard? {
+        guard let embedUrl, let url = URL(string: embedUrl) else { return nil }
+        let hasText = (embedTitle?.isEmpty == false) || (embedDescription?.isEmpty == false)
+        guard hasText else { return nil }
+        return EmbedCard(
+            url: url,
+            title: embedTitle,
+            description: embedDescription,
+            imageURL: embedImage.flatMap { MediaURL.resolve($0, relativeTo: base) },
+            siteName: embedSiteName
+        )
     }
 }

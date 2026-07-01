@@ -3,6 +3,12 @@ import FediHomeKit
 
 struct PostRowView: View {
     let post: FediPost
+    /// Instance base URL, for resolving relative media/embed paths.
+    let baseURL: URL
+    var actions = PostRowActions()
+
+    private var mediaItems: [FediPost.Media] { post.media(relativeTo: baseURL) }
+    private var embed: FediPost.EmbedCard? { post.embedCard(relativeTo: baseURL) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -14,9 +20,9 @@ struct PostRowView: View {
             }
 
             HStack(alignment: .top, spacing: 10) {
-                AsyncAvatar(url: post.avatarURL, size: 44)
+                AsyncAvatar(url: post.avatarURL(relativeTo: baseURL), size: 44)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Text(post.authorName).font(.headline).lineLimit(1)
                         Text(post.fediHandle).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
@@ -28,57 +34,47 @@ struct PostRowView: View {
 
                     PostContentView(post: post)
 
-                    if !post.media.isEmpty { media }
+                    if !mediaItems.isEmpty { mediaView }
+                    if let embed { EmbedCardView(card: embed) }
 
-                    footer
+                    InteractionBar(post: post, actions: actions)
                 }
             }
         }
         .padding(.vertical, 6)
     }
 
-    private var media: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(post.media) { item in
+    private var mediaView: some View {
+        let images = mediaItems.filter { $0.kind == .image }
+        let rest = mediaItems.filter { $0.kind != .image }
+        return VStack(alignment: .leading, spacing: 6) {
+            if !images.isEmpty { imageGrid(images) }
+            ForEach(rest) { item in
                 switch item.kind {
-                case .image:
-                    AsyncImage(url: item.url) { image in
-                        image.resizable().scaledToFit()
-                    } placeholder: {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(.quaternary)
-                            .frame(height: 160)
-                            .overlay(ProgressView())
-                    }
-                    .frame(maxWidth: 440, maxHeight: 320, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                default:
-                    Link(destination: item.url) {
-                        Label(item.url.lastPathComponent, systemImage: "paperclip")
-                    }
-                    .font(.callout)
+                case .video: VideoPlayerView(url: item.url)
+                default: LinkMediaCard(url: item.url) // .link — streaming page
                 }
             }
         }
     }
 
-    private var footer: some View {
-        HStack(spacing: 18) {
-            countLabel("heart", count: post.likeCount, active: post.likedByMe)
-            countLabel("arrow.2.squarepath", count: post.boostCount, active: post.boostedByMe)
-            countLabel("bubble.right", count: post.replyCount, active: false)
+    private func imageGrid(_ images: [FediPost.Media]) -> some View {
+        let multiple = images.count > 1
+        let columns = multiple ? [GridItem(.flexible()), GridItem(.flexible())] : [GridItem(.flexible())]
+        return LazyVGrid(columns: columns, spacing: 6) {
+            ForEach(images) { item in
+                AsyncImage(url: item.url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(.quaternary)
+                        .overlay(ProgressView())
+                }
+                .frame(height: multiple ? 150 : 260)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(.top, 2)
-    }
-
-    private func countLabel(_ symbol: String, count: Int?, active: Bool) -> some View {
-        Label {
-            Text(count.map(String.init) ?? "–")
-        } icon: {
-            Image(systemName: active ? "\(symbol).fill" : symbol)
-                .foregroundStyle(active ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-        }
+        .frame(maxWidth: 460)
     }
 }

@@ -8,6 +8,16 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Feed media & embeds.** Post images now load (relative proxied `/uploads/fedi/…` paths are
+  resolved against the instance base URL), rendered in a grid; direct video files play inline
+  (AVKit) while streaming-page links (YouTube/Vimeo) show a "Watch on …" card; single-link posts
+  show a link-preview embed card. (Audio isn't carried by the feed, so none is shown.)
+- **Post interactions.** Like, boost, and reply from the feed and from a full **thread view**
+  (`GET /api/conversation`); lazy **"Load counts"** (`POST /api/fedi-post-counts`); and a native
+  **share** button. Like/boost are optimistic and revert on failure; because the server persists
+  `likedByMe`/`boostedByMe`, state survives an app relaunch. Write actions correctly target a
+  boosted post's **original** apId (resolving the synthetic `boost:…` id), so liking/replying to a
+  boost federates to the right object and its button stays lit after reload.
 - **Rich post rendering.** Feed content now renders the sanitized `contentHtml` — clickable,
   accent-colored links / @mentions / #hashtags plus bold, italic, strikethrough, code, headings,
   lists, and blockquotes — natively via a Foundation `AttributedString` (dark-mode correct). Handles
