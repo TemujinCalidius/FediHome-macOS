@@ -9,6 +9,7 @@ struct ThreadView: View {
 
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = ThreadViewModel()
+    @StateObject private var imageViewer = ImageViewerModel()
     @Environment(\.dismiss) private var dismiss
     @State private var replyTarget: FediPost?
 
@@ -21,6 +22,8 @@ struct ThreadView: View {
                 }
         }
         .frame(minWidth: 540, minHeight: 520)
+        .environmentObject(imageViewer)
+        .overlay { ImageViewerOverlay().environmentObject(imageViewer) }
         .task { await model.load(rootPost: rootPost, session: session) }
         .sheet(item: $replyTarget) { target in
             ReplyComposerView(post: target) { text, crosspost in

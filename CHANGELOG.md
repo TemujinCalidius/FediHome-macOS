@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Full-screen photo viewer.** Click a feed image to open a full-window lightbox — pinch or
+  double-click to zoom and pan, arrow keys / on-screen chevrons to move between a post's images, and
+  Esc or a click on the backdrop to dismiss. Works in the feed and the thread sheet.
 - **Feed media & embeds.** Post images now load (relative proxied `/uploads/fedi/…` paths are
   resolved against the instance base URL), rendered in a grid; direct video files play inline
   (AVKit) while streaming-page links (YouTube/Vimeo) show a "Watch on …" card; single-link posts

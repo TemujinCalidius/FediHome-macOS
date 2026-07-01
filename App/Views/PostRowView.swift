@@ -7,6 +7,8 @@ struct PostRowView: View {
     let baseURL: URL
     var actions = PostRowActions()
 
+    @EnvironmentObject private var imageViewer: ImageViewerModel
+
     private var mediaItems: [FediPost.Media] { post.media(relativeTo: baseURL) }
     private var embed: FediPost.EmbedCard? { post.embedCard(relativeTo: baseURL) }
 
@@ -60,9 +62,10 @@ struct PostRowView: View {
 
     private func imageGrid(_ images: [FediPost.Media]) -> some View {
         let multiple = images.count > 1
+        let urls = images.map(\.url)
         let columns = multiple ? [GridItem(.flexible()), GridItem(.flexible())] : [GridItem(.flexible())]
         return LazyVGrid(columns: columns, spacing: 6) {
-            ForEach(images) { item in
+            ForEach(Array(images.enumerated()), id: \.element.id) { index, item in
                 AsyncImage(url: item.url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -73,6 +76,8 @@ struct PostRowView: View {
                 .frame(height: multiple ? 150 : 260)
                 .frame(maxWidth: .infinity)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(Rectangle())
+                .onTapGesture { imageViewer.present(urls, index: index) }
             }
         }
         .frame(maxWidth: 460)
