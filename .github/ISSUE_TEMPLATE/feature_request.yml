@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest a capability for the macOS app or its API client.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The best feature requests describe a concrete capability and the use case behind it.
+
+        Open-ended ideas and discussion are welcome in [Discussions](../../discussions).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What should FediHome-macOS be able to do?
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Why is this useful? How would you use it?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      options:
+        - Compose (posting, media, replies)
+        - Timeline / reading
+        - Notifications
+        - Direct messages
+        - Onboarding / instance connection
+        - Menu-bar presence
+        - API client / data models (the portable layer)
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Is there a workaround today? What did you try?
+    validations:
+      required: false

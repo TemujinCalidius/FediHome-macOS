@@ -1,0 +1,80 @@
+name: Bug report
+description: Something in FediHome-macOS behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please fill in as much as you can — a clear repro is the single
+        biggest factor in getting it fixed quickly.
+
+        Questions and "how do I…" go to [Discussions](../../discussions), not here.
+        **Never paste your app token or any secret** into an issue.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+      placeholder: When I boost a post from the timeline, the boost count doesn't update…
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: How can a maintainer trigger this? Number the steps.
+      placeholder: |
+        1. Open the timeline
+        2. Boost any post
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: FediHome-macOS version
+      description: Release tag, or the commit SHA if you built from source.
+      placeholder: v1.0.0 (or a commit SHA)
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Apple menu →  About This Mac.
+      placeholder: "14.5 (Sonoma)"
+    validations:
+      required: true
+  - type: dropdown
+    id: instance-type
+    attributes:
+      label: How do you connect?
+      options:
+        - Self-hosted instance (URL + app token)
+        - Hosted instance (signed in)
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: instance-version
+    attributes:
+      label: FediHome instance version
+      description: From your instance's /api/health, if you can see it. Leave blank if unknown.
+      placeholder: "1.6.1"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console output
+      description: Relevant output from Console.app or the app's logs. Paste as text, not a screenshot. Redact any token or personal data first.
+      render: text
+    validations:
+      required: false

@@ -1,0 +1,22 @@
+# Dependabot version updates. Security alerts/updates are enabled separately in repo settings.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # Keep the GitHub Actions used by our workflows current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "ci"
+
+  # Swift Package Manager — uncomment once a Package.swift lands at the repo root
+  # (Dependabot errors on a swift ecosystem with no manifest, so it stays off until then).
+  # - package-ecosystem: "swift"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   labels: ["dependencies"]
+  #   commit-message:
+  #     prefix: "deps"
