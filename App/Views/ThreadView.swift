@@ -2,7 +2,8 @@ import SwiftUI
 import FediHomeKit
 
 /// A sheet showing the full conversation for a post (`GET /api/conversation`), with
-/// the same interactions as the feed (no nested "View thread").
+/// the same interactions as the feed plus an inline reply bar. Tapping reply on any
+/// comment targets that comment; a default affordance replies to the thread root.
 struct ThreadView: View {
     let rootPost: FediPost
     let baseURL: URL
@@ -20,16 +21,12 @@ struct ThreadView: View {
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
                 }
+                .safeAreaInset(edge: .bottom, spacing: 0) { replyBar }
         }
         .frame(minWidth: 540, minHeight: 520)
         .environmentObject(imageViewer)
         .overlay { ImageViewerOverlay().environmentObject(imageViewer) }
         .task { await model.load(rootPost: rootPost, session: session) }
-        .sheet(item: $replyTarget) { target in
-            ReplyComposerView(post: target) { text, crosspost in
-                await model.sendReply(to: target, text: text, crosspostBluesky: crosspost, session: session)
-            }
-        }
         .alert("Action failed", isPresented: actionErrorBinding) {
             Button("OK") { model.actionError = nil }
         } message: {
@@ -49,6 +46,37 @@ struct ThreadView: View {
                 PostRowView(post: post, baseURL: baseURL, actions: actions(for: post))
             }
             .listStyle(.inset)
+        }
+    }
+
+    @ViewBuilder private var replyBar: some View {
+        if !model.posts.isEmpty {
+            if let target = replyTarget {
+                InlineReplyBar(
+                    post: target,
+                    onCancel: { replyTarget = nil },
+                    onSend: { text, crosspost in
+                        let ok = await model.sendReply(to: target, text: text,
+                                                       crosspostBluesky: crosspost, session: session)
+                        if ok {
+                            replyTarget = nil
+                            await model.load(rootPost: rootPost, session: session) // show the new reply
+                        }
+                        return ok
+                    }
+                )
+                .id(target.id) // reset the editor when the target changes
+            } else {
+                Button { replyTarget = rootPost } label: {
+                    Label("Reply to this thread", systemImage: "arrowshape.turn.up.left")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(.regularMaterial)
+            }
         }
     }
 
