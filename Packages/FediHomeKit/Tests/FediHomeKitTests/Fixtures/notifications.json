@@ -1,0 +1,42 @@
+{
+  "count": 3,
+  "items": [
+    {
+      "id": "like-1",
+      "type": "like",
+      "source": "fedi",
+      "actor": "Alice",
+      "actorUrl": "https://mastodon.social/users/alice",
+      "avatarUrl": "https://mastodon.social/avatars/alice.png",
+      "summary": "liked your post \"Hello\"",
+      "targetUrl": "/post/hello",
+      "maintenanceId": null,
+      "createdAt": "2026-07-01T10:30:00.123Z"
+    },
+    {
+      "id": "follow-2",
+      "type": "follow",
+      "source": "bluesky",
+      "actor": "@bob.bsky.social",
+      "actorUrl": null,
+      "avatarUrl": null,
+      "summary": "followed you",
+      "targetUrl": null,
+      "maintenanceId": null,
+      "createdAt": "2026-07-01T09:15:00Z"
+    },
+    {
+      "id": "sync-3",
+      "type": "update",
+      "source": "maintenance",
+      "actor": "System",
+      "actorUrl": null,
+      "avatarUrl": null,
+      "summary": "Backfill completed",
+      "targetUrl": "/timeline",
+      "maintenanceId": "m-1",
+      "createdAt": "2026-07-01T08:00:00.000Z"
+    }
+  ],
+  "categoryCounts": { "like": 1, "follow": 1, "update": 1 }
+}

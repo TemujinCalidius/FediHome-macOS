@@ -11,12 +11,11 @@ updates:
     commit-message:
       prefix: "ci"
 
-  # Swift Package Manager — uncomment once a Package.swift lands at the repo root
-  # (Dependabot errors on a swift ecosystem with no manifest, so it stays off until then).
-  # - package-ecosystem: "swift"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "weekly"
-  #   labels: ["dependencies"]
-  #   commit-message:
-  #     prefix: "deps"
+  # Swift Package Manager — watches the FediHomeKit package manifest.
+  - package-ecosystem: "swift"
+    directory: "/Packages/FediHomeKit"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"

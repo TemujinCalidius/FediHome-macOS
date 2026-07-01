@@ -8,6 +8,15 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Connect + Feed + Notifications (read MVP).** A native SwiftUI macOS app (macOS 14+) that connects
+  to a FediHome instance via **OAuth 2.0 + PKCE (S256)** — the owner signs in on their own site,
+  the app stores a scoped bearer token in the **Keychain** (keyed by instance URL, multi-instance
+  ready) — then reads the private **feed** (cursor-paged timeline with media, boosts, counts) and
+  **notifications** (bell count + items). Instance-URL entry defaults to `https://fedihome.social`.
+  Ships a portable, UI-agnostic **`FediHomeKit`** Swift package (typed models + `FediHomeClient` +
+  discovery/PKCE/token-exchange helpers) that iOS will reuse and Android mirrors, plus unit tests
+  (RFC 7636 PKCE vector + response decoding against real fixtures). Native macOS theming
+  (system light/dark + accent); the project is generated with **XcodeGen** (`project.yml`).
 - **Repository scaffold** — README, contributor guide (`CONTRIBUTING.md`), security policy
   (`SECURITY.md`), this changelog, issue & PR templates, Dependabot config, a changelog-enforcement
   workflow, and the `dev`/`main` branching model. No app code yet — the repo is being made

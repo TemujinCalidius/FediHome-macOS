@@ -1,0 +1,13 @@
+{
+  "me": "https://fedihome.social",
+  "actor": "https://fedihome.social/ap/actor",
+  "handle": "@sam",
+  "domain": "fedihome.social",
+  "fediAddress": "sam@fedihome.social",
+  "name": "Sam's Home",
+  "authorName": "Samuel Lison",
+  "summary": "My corner of the fediverse.",
+  "avatar": "https://fedihome.social/uploads/avatar.png",
+  "banner": "https://fedihome.social/uploads/banner.png",
+  "counts": { "followers": 42, "following": 10, "posts": 128 }
+}
