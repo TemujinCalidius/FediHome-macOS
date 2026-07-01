@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Inline video playback.** Recognized video links (YouTube, Vimeo, and PeerTube/MakerTube via the
+  `/w/` and `/videos/watch/` patterns) now show a ▶ poster that plays inline in an embedded web
+  player, instead of bouncing to the browser. Unrecognized hosts still open externally, and an
+  "open in browser" affordance is always available. Detection lives in `FediHomeKit.VideoEmbed`
+  (portable, unit-tested); playback uses `WKWebView`.
 - **Full-screen photo viewer.** Click a feed image to open a full-window lightbox — pinch or
   double-click to zoom and pan, arrow keys / on-screen chevrons to move between a post's images, and
   Esc or a click on the backdrop to dismiss. Works in the feed and the thread sheet.

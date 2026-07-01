@@ -37,7 +37,7 @@ struct PostRowView: View {
                     PostContentView(post: post)
 
                     if !mediaItems.isEmpty { mediaView }
-                    if let embed { EmbedCardView(card: embed) }
+                    if let embed { embedView(embed) }
 
                     InteractionBar(post: post, actions: actions)
                 }
@@ -53,10 +53,25 @@ struct PostRowView: View {
             if !images.isEmpty { imageGrid(images) }
             ForEach(rest) { item in
                 switch item.kind {
-                case .video: VideoPlayerView(url: item.url)
-                default: LinkMediaCard(url: item.url) // .link — streaming page
+                case .video:
+                    VideoPlayerView(url: item.url)
+                default: // .link — streaming/page URL
+                    if let embedURL = VideoEmbed.embedURL(for: item.url) {
+                        VideoEmbedView(embedURL: embedURL, pageURL: item.url)
+                    } else {
+                        LinkMediaCard(url: item.url)
+                    }
                 }
             }
+        }
+    }
+
+    /// A video-host embed plays inline; any other embed is a link-preview card.
+    @ViewBuilder private func embedView(_ embed: FediPost.EmbedCard) -> some View {
+        if let embedURL = VideoEmbed.embedURL(for: embed.url) {
+            VideoEmbedView(embedURL: embedURL, pageURL: embed.url, posterURL: embed.imageURL, title: embed.title)
+        } else {
+            EmbedCardView(card: embed)
         }
     }
 
