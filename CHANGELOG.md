@@ -8,6 +8,14 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Rich post rendering.** Feed content now renders the sanitized `contentHtml` — clickable,
+  accent-colored links / @mentions / #hashtags plus bold, italic, strikethrough, code, headings,
+  lists, and blockquotes — natively via a Foundation `AttributedString` (dark-mode correct). Handles
+  the upstream Mastodon URL-truncation idiom (`<span class="invisible">`/`ellipsis`) so long links
+  read `example.com/very/long/url…`. Parsing lives in `FediHTML` in the portable package (scalar-based
+  tokenizer, HTML-entity decoding, safe-scheme link validation) and runs off the main thread. Backed
+  by a 54-case adversarial regression suite covering malformed markup, entity/unicode edge cases, and
+  the Mastodon span idioms.
 - **Connect + Feed + Notifications (read MVP).** A native SwiftUI macOS app (macOS 14+) that connects
   to a FediHome instance via **OAuth 2.0 + PKCE (S256)** — the owner signs in on their own site,
   the app stores a scoped bearer token in the **Keychain** (keyed by instance URL, multi-instance
