@@ -8,9 +8,16 @@ struct ReplyComposerView: View {
     let onSend: (_ text: String, _ crosspostBluesky: Bool) async -> Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
+    @State private var text: String
     @State private var crosspostBluesky = false
     @State private var isSending = false
+
+    init(post: FediPost, onSend: @escaping (_ text: String, _ crosspostBluesky: Bool) async -> Bool) {
+        self.post = post
+        self.onSend = onSend
+        // Address the reply to the author; the server strips a duplicate leading handle.
+        _text = State(initialValue: post.replyMentionHandle + " ")
+    }
 
     private var canSend: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSending

@@ -8,6 +8,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Reply to a specific person.** The reply composer (feed and thread) is prefilled with the
+  target's @handle so a reply is addressed to that person, and the thread's inline reply bar has an
+  **@-mention menu** of the other participants to pull a specific person into the reply. Typed
+  `@user@domain` mentions federate to those actors.
 - **Inline video playback.** Recognized video links (YouTube, Vimeo, and PeerTube/MakerTube via the
   `/w/` and `/videos/watch/` patterns) now show a ▶ poster that plays inline in an embedded web
   player, instead of bouncing to the browser. Unrecognized hosts still open externally, and an

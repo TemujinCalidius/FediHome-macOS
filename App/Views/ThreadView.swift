@@ -54,6 +54,7 @@ struct ThreadView: View {
             if let target = replyTarget {
                 InlineReplyBar(
                     post: target,
+                    participants: participants(excluding: target),
                     onCancel: { replyTarget = nil },
                     onSend: { text, crosspost in
                         let ok = await model.sendReply(to: target, text: text,
@@ -78,6 +79,17 @@ struct ThreadView: View {
                 .background(.regularMaterial)
             }
         }
+    }
+
+    /// Unique handles of other people in the thread (excludes our own posts and the
+    /// person already being addressed), for the reply bar's mention menu.
+    private func participants(excluding target: FediPost) -> [String] {
+        var seen: Set<String> = [target.fediHandle]
+        var result: [String] = []
+        for post in model.posts where !post.isOutgoing {
+            if seen.insert(post.fediHandle).inserted { result.append(post.fediHandle) }
+        }
+        return result
     }
 
     private func actions(for post: FediPost) -> PostRowActions {
