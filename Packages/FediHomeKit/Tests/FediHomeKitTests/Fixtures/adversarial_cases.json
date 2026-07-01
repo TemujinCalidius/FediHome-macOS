@@ -1,0 +1,626 @@
+[
+ {
+  "input": "<p>alpha&#0;beta</p>",
+  "mustContain": [
+   "alpha",
+   "beta"
+  ],
+  "mustNotContain": [
+   "\u0000",
+   "alpha\u0000beta"
+  ],
+  "note": "Numeric entity &#0; decodes to U+0000 NUL. Unicode.Scalar(0) is valid in Swift, so decodeEntity returns Character(NUL). No filtering of control-char codepoints exists, so a raw NUL is injected into the plain-text output between 'alpha' and 'beta'. Correct output should not contain a NUL; either drop it or leave the entity literal.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>x&#13;&#10;y</p>",
+  "mustContain": [
+   "x",
+   "y"
+  ],
+  "mustNotContain": [
+   "\r\n",
+   "\r",
+   "x\r\ny"
+  ],
+  "note": "CRITICAL grapheme-cluster bug. &#13; and &#10; decode to two separate Characters '\\r' and '\\n', but Swift merges CR+LF into a SINGLE grapheme cluster \\r\\n. collapseWhitespace iterates Characters and tests c=='\\n'||c=='\\r' etc; the combined cluster equals none of them, so it is NOT collapsed. Two raw control chars leak into output instead of collapsing to one space. trimmed() would also fail to strip a leading \\r\\n cluster for the same reason.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>value&#+65;</p>",
+  "mustContain": [
+   "value",
+   "&#+65;"
+  ],
+  "mustNotContain": [
+   "valueA"
+  ],
+  "note": "&#+65; is NOT a valid HTML decimal entity (the '+' is illegal). But UInt32(\"+65\") succeeds in Swift (accepts a leading '+'), so decodeEntity returns 'A' and the code emits 'valueA'. Per spec an invalid entity must be left literal. Output should keep '&#+65;' verbatim, not decode it to 'A'.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>tab&#11;here and page&#12;break</p>",
+  "mustContain": [
+   "tab",
+   "here",
+   "page",
+   "break"
+  ],
+  "mustNotContain": [
+   "\u000b",
+   "\f"
+  ],
+  "note": "Vertical-tab (&#11;, U+000B) and form-feed (&#12;, U+000C) decode to control chars that collapseWhitespace does NOT recognize (its set is only space/tab/newline/CR). These raw control characters leak straight into the plain-text output. A sane renderer should treat them as whitespace (collapse) or drop them.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>a&nbsp;&nbsp;&nbsp;b</p>",
+  "mustContain": [
+   "a b"
+  ],
+  "mustNotContain": [
+   "a   b"
+  ],
+  "note": "A run of &nbsp; entities. Each decodes to a regular U+0020 space (not U+00A0), so collapseWhitespace merges the three spaces into one, yielding 'a b'. This matches the collapse spec, but it silently loses the non-breaking semantics; flagged as a lower-severity behavioral concern that the run collapses to a single ordinary space.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>ampersand test &amp;amp; entity</p>",
+  "mustContain": [
+   "&amp;"
+  ],
+  "mustNotContain": [
+   "ampersand test & entity",
+   " & entity"
+  ],
+  "note": "Double-encoded &amp;amp; must decode exactly ONE level: &amp; -> & leaving literal 'amp;', producing visible '&amp;'. The decoder is single-pass (advances past the ';' after decoding) so it should NOT re-decode. Verifies no accidental double-decode that would turn it into a bare '&'.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>math 5 &lt; 6 &amp;&amp; 7 &gt; 4 done</p>",
+  "mustContain": [
+   "5 < 6 && 7 > 4"
+  ],
+  "mustNotContain": [
+   "&lt;",
+   "&gt;",
+   "&amp;"
+  ],
+  "note": "Adjacent named entities including two consecutive &amp;. Correct decode is '5 < 6 && 7 > 4'. Verifies the tokenizer/entity decoder handle back-to-back entities and that '<'/'>' produced by entities do not get re-interpreted as tags (they are decoded in text, after tokenization).",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>emoji &#128512; and flag &#x1F1FA;&#x1F1F8; end</p>",
+  "mustContain": [
+   "emoji",
+   "😀",
+   "flag",
+   "🇺🇸",
+   "end"
+  ],
+  "mustNotContain": [
+   "&#128512;",
+   "&#x1F1FA;"
+  ],
+  "note": "Astral-plane emoji via decimal (&#128512; -> grinning face) and two regional-indicator hex entities forming a combined flag grapheme. Verifies UInt32/Unicode.Scalar handle codepoints above U+FFFF and that the surrounding text is preserved. Should render the emoji and flag, no mojibake or dropped scalars.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>surrogate &#xD800; and huge &#x110000; stay</p>",
+  "mustContain": [
+   "&#xD800;",
+   "&#x110000;"
+  ],
+  "mustNotContain": [
+   "�"
+  ],
+  "note": "&#xD800; is a lone surrogate and &#x110000; is above the max codepoint. Unicode.Scalar returns nil for both, so decodeEntity returns nil and the raw entity text must be kept literally. Verifies out-of-range/surrogate handling leaves the literal '&#xD800;' / '&#x110000;' rather than crashing or inserting a replacement character.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>upper &#X41; and pad &#x00041; and dec &#00065; equal A</p>",
+  "mustContain": [
+   "upper A and pad A and dec A equal A"
+  ],
+  "mustNotContain": [
+   "&#X41;",
+   "&#x00041;",
+   "&#00065;"
+  ],
+  "note": "Uppercase hex prefix &#X41;, hex with leading zeros &#x00041;, and decimal with leading zeros &#00065; must all decode to 'A'. Verifies hasPrefix(\"#X\") branch and that leading zeros are tolerated by UInt32. All three should become 'A'.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>naked &#; and &#x; and &#xZZ; entities</p>",
+  "mustContain": [
+   "&#;",
+   "&#x;",
+   "&#xZZ;"
+  ],
+  "mustNotContain": [
+   "�"
+  ],
+  "note": "Empty numeric bodies (&#; and &#x;) and non-hex digits (&#xZZ;): UInt32 returns nil for empty/invalid, so decodeEntity returns nil and each entity stays literal. Verifies no crash from dropFirst on short strings and that malformed numeric entities are left verbatim.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>bare Q&A and no-semi &amp copy right &copyright;here</p>",
+  "mustContain": [
+   "Q&A",
+   "copy right",
+   "here"
+  ],
+  "mustNotContain": [
+   "�",
+   "Q©"
+  ],
+  "note": "Bare '&' not starting a valid entity (Q&A), an '&amp' with no trailing ';' before the next entity boundary, and an over-length/unknown '&copyright;'. None should be decoded; the literal ampersands and text must survive. Verifies the distance<=12 semicolon lookahead and unknown-entity passthrough without dropping characters.",
+  "lens": "entities"
+ },
+ {
+  "input": "<p>far &reallylongname12345678; entity</p>",
+  "mustContain": [
+   "&reallylongname12345678;"
+  ],
+  "mustNotContain": [
+   "far  entity"
+  ],
+  "note": "The ';' is more than 12 characters away from '&', so the distance<=12 guard fails and the whole run stays literal. Verifies the 12-char cap: an unusually long '&...;' is NOT decoded and no characters are eaten. Output must retain the literal '&reallylongname12345678;'.",
+  "lens": "entities"
+ },
+ {
+  "input": "<a href=\"https://ex.com/?a=1&amp;b=2&amp;c=3\">link &amp; text</a>",
+  "mustContain": [
+   "link & text"
+  ],
+  "mustNotContain": [
+   "&amp;",
+   "link &amp; text"
+  ],
+  "note": "Entity-encoded ampersands inside an href. validatedURL decodes &amp; to & giving 'https://ex.com/?a=1&b=2&c=3', a valid http link. The visible anchor text 'link & text' must also decode its &amp;. Verifies entities are handled both in the attribute (for URL validation) and in the anchor's inner text.",
+  "lens": "entities"
+ },
+ {
+  "input": "before<!-->after",
+  "mustContain": [
+   "before",
+   "after",
+   "beforeafter"
+  ],
+  "mustNotContain": [],
+  "note": "Comment-overrun bug. Tokenizer treats `<!--` as comment-start then scans for `-->` beginning at i+4. For the empty-comment form `<!-->`, the closing `>` is at i+4, so `chars[j]=='-' && chars[j+1]=='-' && chars[j+2]=='>'` never matches; the `while j+2 < n` loop instead runs to EOF and `i = min(n, j+3)` consumes everything after. `after` is silently swallowed. HTML5 treats `<!-->` as an empty comment, so correct output is `beforeafter`.",
+  "lens": "structure"
+ },
+ {
+  "input": "before<!--->after",
+  "mustContain": [
+   "before",
+   "after",
+   "beforeafter"
+  ],
+  "mustNotContain": [],
+  "note": "Same comment-overrun class with the `<!--->` abrupt-closing form. The `-->` terminator is not recognized because the scan window/offset misses it, so the loop runs to EOF and all trailing text (`after`) is eaten. Correct HTML5 parse is an empty comment, yielding `beforeafter`.",
+  "lens": "structure"
+ },
+ {
+  "input": "<!-->hello world",
+  "mustContain": [
+   "hello world"
+  ],
+  "mustNotContain": [],
+  "note": "Empty-comment `<!-->` at the very start. The comment scanner overruns to EOF and consumes the entire rest of the document, producing empty output. Correct output keeps the visible text `hello world`. This is total content loss triggered by a single degenerate comment.",
+  "lens": "structure"
+ },
+ {
+  "input": "Visit</p>my site",
+  "mustContain": [
+   "Visit",
+   "my site"
+  ],
+  "mustNotContain": [
+   "\n\n",
+   "Visit\n"
+  ],
+  "note": "Stray/orphan `</p>` with no matching open frame. In close(), frames.lastIndex(where:{$0.tag==\"p\"}) is nil so nothing is popped, but the `switch tag` block still runs `setBreak(2)`, injecting a paragraph break that was never opened. Spec says orphan close tags keep inner text inline; correct output is `Visit my site` (single space from the two adjacent text runs is not even present since there is no whitespace — actually `Visitmy site`). No `\\n\\n` should appear.",
+  "lens": "structure"
+ },
+ {
+  "input": "line one</div>line two",
+  "mustContain": [
+   "line one",
+   "line two"
+  ],
+  "mustNotContain": [
+   "\n"
+  ],
+  "note": "Stray `</div>` with no open div frame still triggers `setBreak(1)` in close()'s switch, injecting a phantom line break. Correct output keeps text inline with no injected newline: `line oneline two`.",
+  "lens": "structure"
+ },
+ {
+  "input": "cell</tr>next",
+  "mustContain": [
+   "cell",
+   "next"
+  ],
+  "mustNotContain": [
+   "\n"
+  ],
+  "note": "Stray `</tr>` (table row close) with no open frame injects `setBreak(1)` even though `<tr>` open is a no-op (tables are unknown/inline). An orphan `</tr>` in stray table fragments produces a spurious line break. Correct output is inline: `cellnext`.",
+  "lens": "structure"
+ },
+ {
+  "input": "quote</blockquote>after",
+  "mustContain": [
+   "quote",
+   "after"
+  ],
+  "mustNotContain": [
+   "\n\n",
+   "\n"
+  ],
+  "note": "Stray `</blockquote>` with no matching open frame injects `setBreak(2)` from close()'s switch, adding a phantom blank line. Correct output keeps text inline: `quoteafter` with no newlines.",
+  "lens": "structure"
+ },
+ {
+  "input": "item one</li>item two",
+  "mustContain": [
+   "item one",
+   "item two"
+  ],
+  "mustNotContain": [
+   "\n",
+   "•"
+  ],
+  "note": "Stray `</li>` with no open li frame and no surrounding list still runs `setBreak(1)`, injecting a phantom newline between two plain text fragments. Correct output is inline `item oneitem two` with no newline (and no bullet marker).",
+  "lens": "structure"
+ },
+ {
+  "input": "heading</h3>body",
+  "mustContain": [
+   "heading",
+   "body"
+  ],
+  "mustNotContain": [
+   "\n\n",
+   "\n"
+  ],
+  "note": "Stray `</h3>` (heading close) with no open h3 frame injects `setBreak(2)`. Because there was never an <h3> open, no bold block was created, yet a phantom blank line appears. Correct output keeps text inline: `headingbody`.",
+  "lens": "structure"
+ },
+ {
+  "input": "<b>A<i>B</b>C</i>D",
+  "mustContain": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "ABCD"
+  ],
+  "mustNotContain": [
+   "\n"
+  ],
+  "note": "Wrong-order nesting `<b><i></b></i>`. close(\"b\") does lastIndex(where tag==b) and pops all frames above and including b (both i and b), restoring style to before <b>. So `C` (still logically inside <i>) loses its italic, and the later stray `</i>` finds no frame. Text is preserved (`ABCD`) with no crash, but formatting for `C` is wrong (should be italic). This is a formatting-correctness defect the checker can only partially see via plain text; text integrity is the guaranteed check here.",
+  "lens": "structure"
+ },
+ {
+  "input": "hello <b world",
+  "mustContain": [
+   "hello",
+   "<b world"
+  ],
+  "mustNotContain": [],
+  "note": "Unclosed tag with no closing `>` before EOF. Tokenizer's j-scan reaches n without finding `>`, so `text.append(contentsOf: chars[i..<n]); break` emits the raw `<b world` as literal text. Correct per spec (no crash, inner text kept) — this is a robustness/no-crash control case for the no-`>` EOF path. Output must contain the literal.",
+  "lens": "structure"
+ },
+ {
+  "input": "<em>before<div>mid</div>after</em>",
+  "mustContain": [
+   "before",
+   "mid",
+   "after",
+   "before\nmid\nafter"
+  ],
+  "mustNotContain": [
+   "\n\n"
+  ],
+  "note": "Block tag `<div>` nested inside inline `<em>`. `<div>`/`</div>` inject single newlines. Text integrity and break behavior: expected `before\\nmid\\nafter` with all three fragments present and italic preserved throughout (div does not alter style). Verifies block-in-inline does not drop text or corrupt the style stack.",
+  "lens": "structure"
+ },
+ {
+  "input": "<span class=\"invisible\">https://</span><span class=\"ellipsis\">example.com/very</span><span class=\"invisible\">/long/url</span>",
+  "mustContain": [
+   "example.com/very…"
+  ],
+  "mustNotContain": [
+   "https://",
+   "/long/url"
+  ],
+  "note": "Mastodon URL-truncation idiom. invisible spans drop their text, ellipsis span keeps text then appends `…`. Correct output is exactly `example.com/very…`. Verifies the invisible-hidden + ellipsis-append interaction and that hidden text is fully dropped, with the … not swallowed by leading/trailing trim.",
+  "lens": "structure"
+ },
+ {
+  "input": "<span class=\"ellipsis\"><p>x</p></span>",
+  "mustContain": [
+   "x…"
+  ],
+  "mustNotContain": [
+   "x\n\n…",
+   "\n\n…"
+  ],
+  "note": "Ellipsis span wrapping a block `<p>`. The appendOnClose `…` is emitted in close() AFTER the </p> setBreak(2) already queued a paragraph break, so the ellipsis lands on its own line: output `x\\n\\n…` instead of `x…`. The trailing-`…` glyph is orphaned from the text it should follow — a placement bug for block content inside an ellipsis span.",
+  "lens": "structure"
+ },
+ {
+  "input": "prefix <span class=\"uninvisible\">MIDDLE</span> suffix",
+  "mustContain": [
+   "MIDDLE",
+   "prefix",
+   "suffix"
+  ],
+  "mustNotContain": [],
+  "note": "CONFIRMED BUG. open() uses cls.contains(\"invisible\") (substring), so class=\"uninvisible\" (a different, unrelated class token) triggers the hidden style and MIDDLE is dropped. Spec: only the exact `invisible` class token hides text; any other class must be transparent (keep text). Actual output is 'prefix  suffix' with MIDDLE gone.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"invisibleman\">keep</span>",
+  "mustContain": [
+   "keep"
+  ],
+  "mustNotContain": [],
+  "note": "CONFIRMED BUG. contains(\"invisible\") matches inside 'invisibleman', hiding legitimate content. Actual output is empty; correct output keeps 'keep' (unrelated class => transparent).",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"invisibles\">visibletext</span>",
+  "mustContain": [
+   "visibletext"
+  ],
+  "mustNotContain": [],
+  "note": "CONFIRMED BUG. Plural/pluralized class 'invisibles' contains the substring 'invisible', so text is wrongly hidden. Output is empty; should keep the text.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"ellipsised\">TEXT</span>",
+  "mustContain": [
+   "TEXT"
+  ],
+  "mustNotContain": [
+   "…"
+  ],
+  "note": "CONFIRMED BUG. else-if uses cls.contains(\"ellipsis\"), so class=\"ellipsised\" (unrelated token) wrongly appends a trailing '…'. Actual output 'TEXT…'; spec: only exact `ellipsis` token appends the ellipsis, so correct is just 'TEXT'.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"my-ellipsis-wrapper\">word</span>",
+  "mustContain": [
+   "word"
+  ],
+  "mustNotContain": [
+   "…"
+  ],
+  "note": "CONFIRMED BUG. Substring match makes any class containing 'ellipsis' (e.g. 'my-ellipsis-wrapper') spuriously append '…'. Should keep 'word' with no ellipsis.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"ellipsis\"></span>rest",
+  "mustContain": [
+   "rest"
+  ],
+  "mustNotContain": [
+   "…rest"
+  ],
+  "note": "Empty-text ellipsis span. pushFrame appends '…' on close regardless of whether the span had any text, producing a stray leading '…rest'. Spec says ellipsis 'text kept, then a … appended' — with no text there is nothing to truncate, so a bare leading ellipsis before 'rest' is wrong; output should be just 'rest'.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"ellipsis\">  </span>tail",
+  "mustContain": [
+   "tail"
+  ],
+  "mustNotContain": [
+   "…"
+  ],
+  "note": "Ellipsis span whose only content is whitespace (collapsed/leading-trimmed to nothing) still appends '…' on close because appendOnClose is unconditional. No URL fragment was actually shown, so appending '…' is spurious; correct output is 'tail'.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<a href=\"javascript:void(0)\">javascript:void(0)</a>",
+  "mustContain": [
+   "javascript:void(0)"
+  ],
+  "mustNotContain": [],
+  "note": "javascript: scheme must NOT become a link but its visible text must be kept. This guards that validatedURL rejects the scheme while emitText still emits the run. Also a crash/text-drop guard for anchors whose visible text equals the disallowed URL.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<a href=\"data:text/html,<b>bold</b>\">DATA-LINK</a>",
+  "mustContain": [
+   "DATA-LINK"
+  ],
+  "mustNotContain": [
+   "bold"
+  ],
+  "note": "data: URI (must not link) whose attribute value contains angle brackets. Tests that the tokenizer's quote-aware '>' scan keeps <b>...</b> inside the quoted href from being parsed as real tags, and that only the anchor's own text 'DATA-LINK' is emitted (not the 'bold' embedded in the href).",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<a href=\"https://example.com\">outer <a href=\"https://inner.com\">inner</a> tail</a>",
+  "mustContain": [
+   "outer",
+   "inner",
+   "tail"
+  ],
+  "mustNotContain": [],
+  "note": "Nested <a>. On the inner </a>, close() finds the LAST frame tagged 'a' (the inner) and pops back to its saved style — but the outer anchor's link style is thereby lost for 'tail', and there is no crash guard concern; primarily verifies no text is dropped and no crash on nested identical tags. All three visible words must survive.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "before<span class=\"invisible\">never closed to end of string",
+  "mustContain": [
+   "before"
+  ],
+  "mustNotContain": [
+   "never closed"
+  ],
+  "note": "Unclosed invisible span running to EOF. The hidden style is pushed and never popped, so all trailing text is correctly suppressed. Guards against a crash on the dangling frame and confirms 'before' (emitted prior to the span) survives while the hidden tail is dropped.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<span class=\"invisible\">https://</span><span class=\"ellipsis\">example.com/very</span><span class=\"invisible\">/long/path</span> done",
+  "mustContain": [
+   "example.com/very…",
+   "done"
+  ],
+  "mustNotContain": [
+   "https://",
+   "/long/path"
+  ],
+  "note": "Canonical Mastodon truncation idiom (invisible + ellipsis + invisible). Verifies the scheme prefix and long tail are hidden, the middle is kept, exactly one '…' is appended, and following text is separated correctly. Regression anchor for the intended feature.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<a href=\"mailto:me@example.com\">me@example.com</a> and <a href=\"tel:+15550100\">+15550100</a>",
+  "mustContain": [
+   "me@example.com",
+   "+15550100",
+   "and"
+  ],
+  "mustNotContain": [],
+  "note": "mailto is an allowed link scheme; tel is NOT (validatedURL only allows http/https/mailto) so tel must not link but its visible text must remain. Confirms disallowed-but-common schemes keep their text and do not drop or crash.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<a href=\"  HTTPS://Example.COM/Path  \">See site</a>",
+  "mustContain": [
+   "See site"
+  ],
+  "mustNotContain": [],
+  "note": "Uppercase scheme with surrounding whitespace in href. validatedURL trims and lowercases the scheme so this SHOULD become a valid link; the visible text 'See site' must be emitted intact regardless. Guards against whitespace/case handling dropping the anchor text.",
+  "lens": "links-spans"
+ },
+ {
+  "input": "<p>x</p><p>́hello world</p>",
+  "mustContain": [
+   "hello world"
+  ],
+  "mustNotContain": [],
+  "note": "PRIMARY BUG: tokenizer uses Array(html) -> [Character] (grapheme clusters). The combining acute U+0301 right after the '>' of the second <p> fuses into one Character '>́' that is != '>', so the '>' is never found; the tokenizer scans to the '>' of </p> and swallows the whole second paragraph as tag-inner text. 'hello world' is silently dropped. Confirmed output: 'x'.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "<p>a</p><p>‍bee</p>",
+  "mustContain": [
+   "bee"
+  ],
+  "mustNotContain": [],
+  "note": "Same grapheme-boundary tokenizer bug with a Zero Width Joiner (U+200D) instead of a combining mark: ZWJ after the '>' of <p> fuses with it, breaking tag detection and swallowing 'bee'. Confirmed output: 'a'.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "<blockquote>q</blockquote><p>́tail</p>",
+  "mustContain": [
+   "tail"
+  ],
+  "mustNotContain": [],
+  "note": "Grapheme-fusion tokenizer bug across a block boundary: combining mark after the '>' of <p> destroys tokenization and 'tail' vanishes. Confirmed output: 'q'.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "<b>bold</b>️more text",
+  "mustContain": [
+   "bold",
+   "more text"
+  ],
+  "mustNotContain": [
+   "</b>",
+   "<b>"
+  ],
+  "note": "Variation Selector-16 (U+FE0F) after the '>' of <b> fuses into the bracket grapheme; the opening <b> tag is mis-tokenized so its own '>' is skipped, and the closing </b> ends up surfacing as LITERAL text in the output ('bold</b>...') while 'more text' handling breaks. Correct output must contain 'more text' and never the literal string '</b>'. Confirmed buggy output contained '</b>'.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "<p>́lead</p>",
+  "mustContain": [
+   "lead"
+  ],
+  "mustNotContain": [],
+  "note": "Combining mark as the very first content of a paragraph, immediately after '>' of <p>. Fuses with the bracket, the open <p> tag is not recognized, and the entire paragraph text is consumed as tag-inner: output is empty. 'lead' is lost. Confirmed output: '' (empty).",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "5 < 3 and 4 > 2 is math",
+  "mustContain": [
+   "3 and 4"
+  ],
+  "mustNotContain": [],
+  "note": "Literal '<' and '>' that are not tags. The tokenizer sees '<' then scans for '>'; '< 3 and 4 >' is treated as a tag (parseTag lowercases '3 and 4' -> open tag '3', dropped), so the text between '<' and '>' ('3 and 4') is DELETED from output. Correct rendering should preserve the literal comparison text. Confirmed buggy output: '5  2 is math' (the '3 and 4' span is gone).",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "a&#10;&#10;&#10;b",
+  "mustContain": [
+   "a b"
+  ],
+  "mustNotContain": [
+   "a\n\nb",
+   "a\nb"
+  ],
+  "note": "Numeric newline entities. Per spec entities are decoded (&#10; -> '\\n') and then whitespace runs collapse to a single space, giving 'a b'. Verifies collapse handles decoded control whitespace and does not crash. Confirmed output 'a b' -- included as a correctness anchor (collapse of decoded newlines).",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "<p>alpha</p><p>&nbsp;</p><p>omega</p>",
+  "mustContain": [
+   "alpha",
+   "omega"
+  ],
+  "mustNotContain": [
+   "alphaomega"
+  ],
+  "note": "A paragraph whose only content is &nbsp;. decodeEntity maps 'nbsp' to a regular ASCII space U+0020 (line 340) rather than U+00A0 non-breaking space, so the middle paragraph collapses/trims to empty. The two block breaks then merge (max), yielding 'alpha\\n\\nomega'. Output must still contain both words with a blank line and must not lose the alpha/omega text; documents that nbsp is treated as a normal collapsible space rather than a preserved NBSP.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "‮start reversed‬ end here",
+  "mustContain": [
+   "start reversed",
+   "end here"
+  ],
+  "mustNotContain": [],
+  "note": "RTL override bidi control (U+202E ... U+202C). These are not whitespace and not tags, so they must pass through untouched (visible-order preserved for the renderer). Verifies bidi controls are not stripped, mangled, or crashed on. Correct output keeps the literal words in source order.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "café́́ and naïve",
+  "mustContain": [
+   "and",
+   "ïve"
+  ],
+  "mustNotContain": [],
+  "note": "Stacked combining marks (three U+0301 after 'e') plus a precomposed diaeresis, in plain text with no adjacent tag boundary. Must render the text intact without crashing or dropping scalars. Guards against grapheme-cluster mishandling in collapseWhitespace / leading-trim / trimmed(). Correct output preserves 'cafe' and 'naïve' portions.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "   \t\n  ​   ",
+  "mustContain": [],
+  "mustNotContain": [
+   " ",
+   "​"
+  ],
+  "note": "Only-whitespace-ish input: ASCII spaces/tab/newline plus a raw NBSP (U+00A0) and a ZWSP (U+200B). collapseWhitespace only treats ' \\t\\n\\r' as space, so raw U+00A0 and U+200B survive collapsing; trimmed() only strips '\\n' and ' ', so a leading/trailing raw NBSP/ZWSP is NOT trimmed and leaks into output. Correct behavior for whitespace-only input should be empty output; this likely yields a non-empty string of stray invisible scalars. mustNotContain flags the leaked NBSP/ZWSP.",
+  "lens": "unicode-ws"
+ },
+ {
+  "input": "before<!-- á -->after",
+  "mustContain": [
+   "before",
+   "after"
+  ],
+  "mustNotContain": [
+   "<!--",
+   "-->"
+  ],
+  "note": "Combining mark inside an HTML comment adjacent to characters can perturb the comment scanner, and the comment-open detection uses index arithmetic (i+3<n) on the grapheme array. Combining marks fusing '-' or '>' inside '-->' could break comment termination. Correct output drops the comment entirely and yields 'beforeafter'. Checks comment handling stays robust to combining marks; must not leak comment markers.",
+  "lens": "unicode-ws"
+ }
+]
