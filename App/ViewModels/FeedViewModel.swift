@@ -2,11 +2,12 @@ import Foundation
 import FediHomeKit
 
 @MainActor
-final class FeedViewModel: ObservableObject {
-    @Published private(set) var posts: [FediPost] = []
+final class FeedViewModel: ObservableObject, PostInteracting {
+    @Published var posts: [FediPost] = []
     @Published private(set) var isLoading = false
     @Published private(set) var isLoadingMore = false
     @Published var errorMessage: String?
+    @Published var actionError: String?
 
     private var cursor: String?
     private var reachedEnd = false

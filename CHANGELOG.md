@@ -8,6 +8,28 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Reply to a specific person.** The reply composer (feed and thread) is prefilled with the
+  target's @handle so a reply is addressed to that person, and the thread's inline reply bar has an
+  **@-mention menu** of the other participants to pull a specific person into the reply. Typed
+  `@user@domain` mentions federate to those actors.
+- **Inline video playback.** Recognized video links (YouTube, Vimeo, and PeerTube/MakerTube via the
+  `/w/` and `/videos/watch/` patterns) now show a ▶ poster that plays inline in an embedded web
+  player, instead of bouncing to the browser. Unrecognized hosts still open externally, and an
+  "open in browser" affordance is always available. Detection lives in `FediHomeKit.VideoEmbed`
+  (portable, unit-tested); playback uses `WKWebView`.
+- **Full-screen photo viewer.** Click a feed image to open a full-window lightbox — pinch or
+  double-click to zoom and pan, arrow keys / on-screen chevrons to move between a post's images, and
+  Esc or a click on the backdrop to dismiss. Works in the feed and the thread sheet.
+- **Feed media & embeds.** Post images now load (relative proxied `/uploads/fedi/…` paths are
+  resolved against the instance base URL), rendered in a grid; direct video files play inline
+  (AVKit) while streaming-page links (YouTube/Vimeo) show a "Watch on …" card; single-link posts
+  show a link-preview embed card. (Audio isn't carried by the feed, so none is shown.)
+- **Post interactions.** Like, boost, and reply from the feed and from a full **thread view**
+  (`GET /api/conversation`); lazy **"Load counts"** (`POST /api/fedi-post-counts`); and a native
+  **share** button. Like/boost are optimistic and revert on failure; because the server persists
+  `likedByMe`/`boostedByMe`, state survives an app relaunch. Write actions correctly target a
+  boosted post's **original** apId (resolving the synthetic `boost:…` id), so liking/replying to a
+  boost federates to the right object and its button stays lit after reload.
 - **Rich post rendering.** Feed content now renders the sanitized `contentHtml` — clickable,
   accent-colored links / @mentions / #hashtags plus bold, italic, strikethrough, code, headings,
   lists, and blockquotes — natively via a Foundation `AttributedString` (dark-mode correct). Handles
