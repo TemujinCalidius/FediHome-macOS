@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **People.** A People section with **Following / Followers** lists (from `/api/graph`, with counts);
+  tap a fediverse person to open their profile card, and **follow someone** by entering
+  `@name@server`. Discovery search is blocked on a FediHome endpoint (tracked in #6).
 - **Clickable profiles.** Tap a post author's avatar or name (feed or thread) to open a profile card
   with **Follow / Unfollow**, **Block** (confirmed), and **Open in browser**. Full bio/counts/posts is
   blocked on a FediHome profile endpoint (tracked in #5).
