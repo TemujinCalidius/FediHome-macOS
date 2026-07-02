@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Clickable profiles.** Tap a post author's avatar or name (feed or thread) to open a profile card
+  with **Follow / Unfollow**, **Block** (confirmed), and **Open in browser**. Full bio/counts/posts is
+  blocked on a FediHome profile endpoint (tracked in #5).
 - **Compose a new post.** A "New Post" section to publish via Micropub: a note with no title lands in
   the instance's Journal, while adding a title makes it an Article; a live character counter nudges
   long no-title posts toward an Article. Attach photos (uploaded via `/api/media`, shown as thumbnails)
