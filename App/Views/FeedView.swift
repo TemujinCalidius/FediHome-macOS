@@ -3,6 +3,7 @@ import FediHomeKit
 
 struct FeedView: View {
     @EnvironmentObject private var session: SessionStore
+    @EnvironmentObject private var navigator: Navigator
     @StateObject private var model = FeedViewModel()
     @State private var sheet: FeedSheet?
 
@@ -21,6 +22,7 @@ struct FeedView: View {
             .task {
                 if model.posts.isEmpty { await model.loadFirst(session: session) }
             }
+            .onChange(of: navigator.refreshTick) { Task { await model.loadFirst(session: session) } }
             .sheet(item: $sheet) { sheet in
                 switch sheet {
                 case .reply(let target):

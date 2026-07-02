@@ -3,6 +3,7 @@ import FediHomeKit
 
 struct NotificationsView: View {
     @EnvironmentObject private var session: SessionStore
+    @EnvironmentObject private var navigator: Navigator
     @StateObject private var model = NotificationsViewModel()
 
     var body: some View {
@@ -20,6 +21,7 @@ struct NotificationsView: View {
             .task {
                 if model.response == nil { await model.load(session: session) }
             }
+            .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
     }
 
     private var title: String {

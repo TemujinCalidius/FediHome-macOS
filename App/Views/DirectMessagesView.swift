@@ -3,6 +3,7 @@ import FediHomeKit
 
 struct DirectMessagesView: View {
     @EnvironmentObject private var session: SessionStore
+    @EnvironmentObject private var navigator: Navigator
     @StateObject private var model = DirectMessagesViewModel()
     @State private var showingNew = false
 
@@ -19,6 +20,7 @@ struct DirectMessagesView: View {
                 }
         }
         .task { if model.conversations.isEmpty { await model.load(session: session) } }
+        .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
         .sheet(isPresented: $showingNew) {
             NewDMView { handle, text in
                 await model.startConversation(handle: handle, text: text, session: session)

@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Menu-bar presence.** A status-bar item showing unread notification + message counts with quick
+  actions (open, jump to a section, New Post, refresh, disconnect), plus native app-menu commands —
+  **New Post (⌘N)**, a **Go** menu for the sections (⌘1–⌘5), and **Refresh (⌘R)**.
 - **Direct messages.** A Messages section: conversation list grouped by conversation with unread
   indicators, a thread view with message bubbles, an inline reply composer, mark-read on open, and
   starting a new DM by `@handle`. Fediverse DMs; replying to Bluesky DMs isn't supported yet.
