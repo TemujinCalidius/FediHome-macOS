@@ -14,6 +14,7 @@ struct MainView: View {
                 Label("New Post", systemImage: "square.and.pencil").tag(AppSection.compose)
                 Label("People", systemImage: "person.2").tag(AppSection.people)
                 Label("Messages", systemImage: "bubble.left.and.bubble.right").tag(AppSection.messages)
+                Label("My Posts", systemImage: "tray.full").tag(AppSection.myPosts)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
             .safeAreaInset(edge: .bottom) { accountFooter }
@@ -24,6 +25,7 @@ struct MainView: View {
             case .compose: ComposeView()
             case .people: PeopleView()
             case .messages: DirectMessagesView()
+            case .myPosts: MyPostsView()
             }
         }
     }

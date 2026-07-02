@@ -4,7 +4,7 @@ import FediHomeKit
 /// The app's sidebar sections — shared so menu commands and the menu-bar item can
 /// drive navigation, not just the sidebar.
 enum AppSection: Hashable, CaseIterable {
-    case feed, notifications, compose, people, messages
+    case feed, notifications, compose, people, messages, myPosts
 }
 
 /// App-level navigation state, shared across the window and the menu-bar scene.

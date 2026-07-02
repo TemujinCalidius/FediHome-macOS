@@ -152,6 +152,28 @@ public actor FediHomeClient {
         try await admin(action: "mark_all_dms_read", [:])
     }
 
+    // MARK: Own content (`read` scope) — the "My Posts" manager
+
+    /// `GET /api/posts` — the owner's own posts, including drafts and scheduled.
+    /// - Parameters:
+    ///   - status: `published` | `draft` | `scheduled` (nil = all)
+    ///   - type: `note` | `article` | `journal` | `photo` | `video` | `audio` (nil = all)
+    public func ownPosts(cursor: String? = nil, status: String? = nil,
+                         type: String? = nil, limit: Int? = nil) async throws -> OwnPostsPage {
+        var query: [URLQueryItem] = []
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        if let status { query.append(URLQueryItem(name: "status", value: status)) }
+        if let type { query.append(URLQueryItem(name: "type", value: type)) }
+        if let limit { query.append(URLQueryItem(name: "limit", value: String(limit))) }
+        return try await get("/api/posts", query: query)
+    }
+
+    /// Micropub `action=delete` (`delete` scope) — removes a post (a scheduled post's
+    /// delete doubles as "cancel"), federates the removal. 204 on success.
+    public func deletePost(url: String) async throws {
+        try await postVoid("/api/micropub", body: ["action": "delete", "url": url])
+    }
+
     // MARK: Compose (`create` / `media` scopes)
 
     /// `POST /api/media` — upload an image or audio file (multipart `file` field).
