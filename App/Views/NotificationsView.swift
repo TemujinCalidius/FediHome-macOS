@@ -43,10 +43,13 @@ struct NotificationsView: View {
     }
 
     /// Open the notification's target (the post) or the actor, in the browser.
+    /// FediHome returns relative paths (e.g. `/post/slug`, `/timeline`) as well as
+    /// absolute URLs, so resolve against the instance base URL (an unresolved
+    /// relative URL makes `openURL` fail with paramErr / -50).
     private func open(_ item: NotificationItem) {
-        if let string = item.targetUrl ?? item.actorUrl, let url = URL(string: string) {
-            openURL(url)
-        }
+        guard let string = item.targetUrl ?? item.actorUrl,
+              let url = MediaURL.resolve(string, relativeTo: session.resolvedBaseURL) else { return }
+        openURL(url)
     }
 
     @ViewBuilder private var content: some View {
