@@ -19,9 +19,12 @@ struct ComposeView: View {
 
                 contentEditor
 
+                if model.isArticle { descriptionEditor }
+
                 if !model.attachments.isEmpty { photoStrip }
 
                 controls
+                publishingOptions
 
                 if let success = model.successURL { successBanner(success) }
                 if let error = model.errorMessage { errorBanner(error) }
@@ -36,11 +39,15 @@ struct ComposeView: View {
             Button {
                 Task { await model.post(session: session) }
             } label: {
-                if model.isPosting { ProgressView().controlSize(.small) } else { Text("Post") }
+                if model.isPosting {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Text(model.isDraft ? "Save Draft" : (model.isScheduling ? "Schedule" : "Post"))
+                }
             }
             .disabled(!model.canPost)
             .keyboardShortcut(.return, modifiers: .command)
-            .help("Publish")
+            .help(model.isScheduling ? "Schedule for later" : "Publish")
         }
         .fileImporter(isPresented: $showingPhotoImporter,
                       allowedContentTypes: [.image],
@@ -82,6 +89,28 @@ struct ComposeView: View {
                 }
             if model.suggestsArticle {
                 Label("Long posts read better as Articles — add a title.", systemImage: "info.circle")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+        }
+    }
+
+    /// Article description → excerpt/AP summary. Microblog-length, shown under the body.
+    private var descriptionEditor: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Description").font(.caption).bold().foregroundStyle(.secondary)
+                Spacer()
+                Text("\(model.descriptionCount)/300")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(model.descriptionOverLimit ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+            }
+            TextField("A short summary shown with the article…", text: $model.postDescription, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineLimit(2...5)
+                .padding(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
+            if model.descriptionOverLimit {
+                Label("Descriptions read best under 300 characters.", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.orange)
             }
         }
@@ -132,14 +161,48 @@ struct ComposeView: View {
 
             Toggle("Save as draft", isOn: $model.isDraft)
                 .toggleStyle(.checkbox)
+                .disabled(model.isScheduling) // drafts publish via Micropub; scheduling via /api/compose
+        }
+    }
+
+    /// Scheduling + crossposting (not applicable to drafts).
+    private var publishingOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            HStack(spacing: 12) {
+                Toggle("Schedule for later", isOn: $model.isScheduling)
+                    .toggleStyle(.checkbox)
+                    .disabled(model.isDraft)
+                if model.isScheduling {
+                    DatePicker("", selection: $model.scheduledDate, in: Date()...,
+                               displayedComponents: [.date, .hourAndMinute])
+                        .labelsHidden()
+                }
+                Spacer()
+            }
+            if !model.isDraft {
+                HStack(spacing: 16) {
+                    Toggle("Cross-post to Bluesky", isOn: $model.crosspostBluesky)
+                        .toggleStyle(.checkbox)
+                    Toggle("Cross-post to Threads", isOn: $model.crosspostThreads)
+                        .toggleStyle(.checkbox)
+                    Spacer()
+                }
+                .font(.callout)
+            }
         }
     }
 
     private func successBanner(_ url: URL) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-            Text("Posted.")
-            Link("View post", destination: url)
+            Image(systemName: model.scheduledConfirmation != nil ? "clock.badge.checkmark" : "checkmark.circle.fill")
+                .foregroundStyle(.green)
+            if let when = model.scheduledConfirmation {
+                Text("Scheduled for \(when.formatted(date: .abbreviated, time: .shortened)).")
+            } else {
+                Text("Posted.")
+                Link("View post", destination: url)
+            }
             Spacer()
             Button("New Post") { model.startNew() }
         }
