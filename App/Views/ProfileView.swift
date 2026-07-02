@@ -55,6 +55,7 @@ struct ProfileView: View {
     @State private var isFollowing: Bool?
     @State private var busy = false
     @State private var confirmingBlock = false
+    @State private var didBlock = false
     @State private var error: String?
 
     var body: some View {
@@ -147,7 +148,11 @@ struct ProfileView: View {
                 if let web = profile?.webURL ?? target.webURL {
                     Link("Open in browser", destination: web)
                 }
-                Button("Block…", role: .destructive) { confirmingBlock = true }
+                if didBlock {
+                    Button("Unblock") { Task { await unblock() } }
+                } else {
+                    Button("Block…", role: .destructive) { confirmingBlock = true }
+                }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
@@ -229,6 +234,21 @@ struct ProfileView: View {
         do {
             try await client.block(actorUri: target.actorUri)
             isFollowing = false
+            didBlock = true
+        } catch APIError.unauthorized {
+            session.reportUnauthorized()
+        } catch {
+            self.error = message(error)
+        }
+    }
+
+    private func unblock() async {
+        guard let client = session.client else { return }
+        busy = true; error = nil
+        defer { busy = false }
+        do {
+            try await client.unblock(actorUri: target.actorUri)
+            didBlock = false
         } catch APIError.unauthorized {
             session.reportUnauthorized()
         } catch {

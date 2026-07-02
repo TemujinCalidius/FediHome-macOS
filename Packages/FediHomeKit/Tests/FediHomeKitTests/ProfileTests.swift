@@ -52,6 +52,31 @@ final class ProfileTests: XCTestCase {
     }
 }
 
+final class GraphBlockedTests: XCTestCase {
+    func testGraphDecodesWithBlockedList() throws {
+        let json = Data("""
+        { "followers": [], "following": [],
+          "blocked": [{ "actorUri": "https://bad.example/users/troll", "handle": "@troll@bad.example",
+                        "displayName": "Troll", "avatarUrl": null, "createdAt": "2026-07-02T10:00:00Z" }],
+          "counts": { "followers": 0, "following": 0, "blocked": 1 } }
+        """.utf8)
+        let graph = try JSONDecoder.fediHome.decode(SocialGraph.self, from: json)
+        XCTAssertEqual(graph.blockedPeople.count, 1)
+        XCTAssertEqual(graph.blockedPeople.first?.name, "Troll")
+        XCTAssertEqual(graph.counts.blocked, 1)
+    }
+
+    func testGraphDecodesWithoutBlocked_oldServer() throws {
+        let json = Data("""
+        { "followers": [], "following": [], "counts": { "followers": 2, "following": 3 } }
+        """.utf8)
+        let graph = try JSONDecoder.fediHome.decode(SocialGraph.self, from: json)
+        XCTAssertTrue(graph.blockedPeople.isEmpty) // optional-decode default
+        XCTAssertNil(graph.counts.blocked)
+        XCTAssertEqual(graph.counts.following, 3)
+    }
+}
+
 // Memberwise init for the test above (the model is decode-only in production).
 private extension Profile {
     init(actorUri: String, handle: String, displayName: String?, avatarUrl: String?,

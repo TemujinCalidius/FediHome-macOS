@@ -8,6 +8,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Block list & unblock.** People gains a **Blocked** tab listing everyone you've blocked, with an
+  **Unblock** button (confirmed; federates the Undo). After blocking from a profile card, the card
+  offers Unblock right there. Older instances without block tracking still work (empty tab).
+  (Closes the app side of #12.)
 - **Full profiles & finding people.** Profile cards now show the person's **header, bio, and
   follower/following/post counts** (plus a "Follows you" badge), powered by the new profile
   endpoint. The People search field resolves any `@name@server` into a **discovery card** you can

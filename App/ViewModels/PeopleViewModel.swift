@@ -71,6 +71,19 @@ final class PeopleViewModel: ObservableObject {
         }
     }
 
+    /// Unblocks and refreshes the graph so the Blocked list updates.
+    func unblock(_ person: BlockedPerson, session: SessionStore) async {
+        guard let client = session.client else { return }
+        do {
+            try await client.unblock(actorUri: person.actorUri)
+            await load(session: session)
+        } catch APIError.unauthorized {
+            session.reportUnauthorized()
+        } catch {
+            actionMessage = Self.message(for: error)
+        }
+    }
+
     /// Normalizes `name@server` / `@name@server` → `@name@server`; nil if it isn't a handle.
     static func normalizedHandle(_ raw: String) -> String? {
         var handle = raw.trimmingCharacters(in: .whitespacesAndNewlines)
