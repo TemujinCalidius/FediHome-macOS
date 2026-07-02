@@ -274,10 +274,14 @@ public actor FediHomeClient {
         request.httpMethod = "POST"
         applyDefaults(&request)
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        // Quotes/CR/LF are legal in macOS filenames but corrupt the multipart header.
+        let safeFilename = filename.map { c -> Character in
+            (c == "\"" || c == "\r" || c == "\n") ? "_" : c
+        }.reduce(into: "") { $0.append($1) }
         var body = Data()
         func appendString(_ string: String) { body.append(Data(string.utf8)) }
         appendString("--\(boundary)\r\n")
-        appendString("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(filename)\"\r\n")
+        appendString("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(safeFilename)\"\r\n")
         appendString("Content-Type: \(mimeType)\r\n\r\n")
         body.append(fileData)
         appendString("\r\n--\(boundary)--\r\n")

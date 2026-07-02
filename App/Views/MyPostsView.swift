@@ -68,16 +68,30 @@ struct MyPostsView: View {
                                    description: Text(error))
         } else if model.posts.isEmpty {
             ContentUnavailableView("Nothing here", systemImage: "tray",
-                                   description: Text("No \(model.statusFilter.label.lowercased()) posts."))
+                                   description: Text(model.statusFilter.emptyMessage))
         } else {
-            List(model.posts) { post in
-                MyPostRow(post: post, baseURL: session.resolvedBaseURL) {
-                    pendingDelete = post
+            VStack(spacing: 0) {
+                if let error = model.errorMessage {
+                    // Failures with content on screen (delete / load-more) must not be silent.
+                    HStack(spacing: 8) {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption).foregroundStyle(.red).lineLimit(2)
+                        Spacer()
+                        Button { model.errorMessage = nil } label: { Image(systemName: "xmark") }
+                            .buttonStyle(.plain).font(.caption)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(.red.opacity(0.08))
                 }
-                .task { await model.loadMoreIfNeeded(current: post, session: session) }
+                List(model.posts) { post in
+                    MyPostRow(post: post, baseURL: session.resolvedBaseURL) {
+                        pendingDelete = post
+                    }
+                    .task { await model.loadMoreIfNeeded(current: post, session: session) }
+                }
+                .listStyle(.inset)
+                .refreshable { await model.load(session: session) }
             }
-            .listStyle(.inset)
-            .refreshable { await model.load(session: session) }
         }
     }
 

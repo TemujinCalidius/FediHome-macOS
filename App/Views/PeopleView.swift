@@ -99,7 +99,10 @@ struct PeopleView: View {
                                    systemImage: "person.2")
         } else {
             List(people) { person in
-                PersonRow(person: person, baseURL: session.resolvedBaseURL)
+                PersonRow(person: person, baseURL: session.resolvedBaseURL) {
+                    // Follow/unfollow/block in the popover changes the graph — refresh.
+                    Task { await model.load(session: session) }
+                }
             }
             .listStyle(.inset)
         }
@@ -124,6 +127,7 @@ struct PeopleView: View {
 struct PersonRow: View {
     let person: GraphPerson
     let baseURL: URL
+    var onProfileDismiss: () -> Void = {}
     @State private var showingProfile = false
 
     private var profileTarget: ProfileTarget? { ProfileTarget(person: person) }
@@ -147,6 +151,7 @@ struct PersonRow: View {
         .popover(isPresented: $showingProfile, arrowEdge: .trailing) {
             if let target = profileTarget {
                 ProfileView(target: target, baseURL: baseURL)
+                    .onDisappear(perform: onProfileDismiss)
             }
         }
     }

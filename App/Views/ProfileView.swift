@@ -187,6 +187,8 @@ struct ProfileView: View {
         guard let client = session.client else { return }
         do {
             apply(try await client.profile(actor: target.actorUri))
+        } catch APIError.unauthorized {
+            session.reportUnauthorized() // expired session must trigger reconnect, not a wrong card
         } catch {
             // Older instance (no /api/profile) or fetch failure → lightweight card:
             // resolve follow state from the graph like before.

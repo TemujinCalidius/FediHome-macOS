@@ -14,6 +14,14 @@ final class MyPostsViewModel: ObservableObject {
             case .draft: return "Drafts"
             }
         }
+        var emptyMessage: String {
+            switch self {
+            case .all: return "No posts yet."
+            case .published: return "No published posts."
+            case .scheduled: return "No scheduled posts."
+            case .draft: return "No drafts."
+            }
+        }
         var queryValue: String? { self == .all ? nil : rawValue }
     }
 
@@ -60,18 +68,21 @@ final class MyPostsViewModel: ObservableObject {
     func loadMoreIfNeeded(current post: OwnPost, session: SessionStore) async {
         guard post.id == posts.last?.id else { return }
         guard let client = session.client, !reachedEnd, !isLoading, !isLoadingMore, let cursor else { return }
+        let token = loadToken // a filter change bumps this → drop the stale page
         isLoadingMore = true
         defer { isLoadingMore = false }
         do {
             let page = try await client.ownPosts(cursor: cursor,
                                                  status: statusFilter.queryValue,
                                                  type: typeFilter.queryValue)
+            guard token == loadToken else { return }
             posts.append(contentsOf: page.posts)
             self.cursor = page.nextCursor
             reachedEnd = page.nextCursor == nil
         } catch APIError.unauthorized {
             session.reportUnauthorized()
         } catch {
+            guard token == loadToken else { return }
             errorMessage = Self.friendlyMessage(for: error)
         }
     }

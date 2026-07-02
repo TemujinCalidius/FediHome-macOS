@@ -36,8 +36,21 @@ final class VideoEmbedTests: XCTestCase {
     }
 
     func testPeerTubeShortWatch() {
-        XCTAssertEqual(embed("https://makertube.net/w/abcDEF12"),
-                       "https://makertube.net/videos/embed/abcDEF12?autoplay=1")
+        // Realistic shortUUID (~22 alphanumerics).
+        XCTAssertEqual(embed("https://makertube.net/w/kkGMgK9ZtnKfYAgeaLM2mT"),
+                       "https://makertube.net/videos/embed/kkGMgK9ZtnKfYAgeaLM2mT?autoplay=1")
+    }
+
+    func testPeerTubeHeuristicRejectsNonVideoPaths() {
+        XCTAssertNil(embed("https://en.wikipedia.org/w/index.php?title=Cats")) // dot in id
+        XCTAssertNil(embed("https://example.com/w/about"))                     // too short
+        XCTAssertNil(embed("https://example.com/videos/watch/hello"))          // too short
+    }
+
+    func testHostSuffixNeedsDomainBoundary() {
+        XCTAssertNil(embed("https://notvimeo.com/123456789"))
+        XCTAssertNil(embed("https://fakeyoutube.com/watch?v=abc123"))
+        XCTAssertNotNil(embed("https://m.youtube.com/watch?v=abc123")) // real subdomain still works
     }
 
     func testPeerTubeVideosWatch() {
@@ -58,13 +71,18 @@ final class VideoEmbedTests: XCTestCase {
     }
 
     func testEmbedInfoPeerTube() {
-        let peertube = info("https://makertube.net/w/abcDEF12")
+        let peertube = info("https://makertube.net/w/kkGMgK9ZtnKfYAgeaLM2mT")
         XCTAssertEqual(peertube?.embedHost, "makertube.net")
-        XCTAssertEqual(peertube?.embedId, "abcDEF12")
-        XCTAssertEqual(peertube?.iframeSrc, "https://makertube.net/videos/embed/abcDEF12")
+        XCTAssertEqual(peertube?.embedId, "kkGMgK9ZtnKfYAgeaLM2mT")
+        XCTAssertEqual(peertube?.iframeSrc, "https://makertube.net/videos/embed/kkGMgK9ZtnKfYAgeaLM2mT")
 
-        let watch = info("https://framatube.org/videos/watch/9c9de5e8-0a1e")
-        XCTAssertEqual(watch?.iframeSrc, "https://framatube.org/videos/embed/9c9de5e8-0a1e")
+        let watch = info("https://framatube.org/videos/watch/9c9de5e8-0a1e-484a-b099-e80766180a6d")
+        XCTAssertEqual(watch?.iframeSrc, "https://framatube.org/videos/embed/9c9de5e8-0a1e-484a-b099-e80766180a6d")
+    }
+
+    func testEmbedInfoRejectsLookalikes() {
+        XCTAssertNil(info("https://en.wikipedia.org/w/index.php?title=Cats"))
+        XCTAssertNil(info("https://notvimeo.com/123456789"))
     }
 
     func testEmbedInfoYouTubeAndVimeo() {

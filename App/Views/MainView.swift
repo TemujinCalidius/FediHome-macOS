@@ -5,6 +5,8 @@ struct MainView: View {
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var navigator: Navigator
     @State private var showingMe = false
+    /// Owned here (not by ComposeView) so an in-progress post survives section switches.
+    @StateObject private var composeModel = ComposeViewModel()
 
     var body: some View {
         NavigationSplitView {
@@ -22,7 +24,7 @@ struct MainView: View {
             switch navigator.section {
             case .feed: FeedView()
             case .notifications: NotificationsView()
-            case .compose: ComposeView()
+            case .compose: ComposeView(model: composeModel)
             case .people: PeopleView()
             case .messages: DirectMessagesView()
             case .myPosts: MyPostsView()
