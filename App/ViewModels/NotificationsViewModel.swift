@@ -23,4 +23,16 @@ final class NotificationsViewModel: ObservableObject {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
+
+    func markAllRead(session: SessionStore) async {
+        guard let client = session.client else { return }
+        do {
+            try await client.markAllNotificationsRead()
+            await load(session: session)
+        } catch APIError.unauthorized {
+            session.reportUnauthorized()
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
 }

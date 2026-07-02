@@ -13,6 +13,7 @@ struct FediHomeApp: App {
                 .environmentObject(session)
                 .environmentObject(imageViewer)
                 .environmentObject(navigator)
+                .environmentObject(badge)
                 .overlay { ImageViewerOverlay().environmentObject(imageViewer) }
                 .frame(minWidth: 760, minHeight: 520)
                 .task(id: session.phase) {

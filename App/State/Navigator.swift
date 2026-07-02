@@ -26,6 +26,10 @@ final class BadgeModel: ObservableObject {
 
     var total: Int { notificationCount + unreadMessages }
 
+    /// Let the visible section keep the badge in sync without an extra round-trip.
+    func setNotificationCount(_ value: Int) { notificationCount = value }
+    func setUnreadMessages(_ value: Int) { unreadMessages = value }
+
     func refresh(session: SessionStore) async {
         guard let client = session.client else {
             notificationCount = 0; unreadMessages = 0; return

@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Fixed
+- **Notifications are now actionable** — a **Mark all read** button (clears the count + menu-bar
+  badge), an unread dot on new items, and clicking a notification opens its post/actor. The DM badge
+  also clears as conversations are read.
+- **DM conversation list showed raw HTML** in the message preview — now stripped to plain text (the
+  thread bubbles were already fixed).
 - **Direct messages rendered raw HTML tags** — incoming DM content is now rendered cleanly (via the
   same HTML renderer as posts) instead of showing literal `<p>` tags.
 - **Notifications and DMs now refresh on their own** while their section is open (polling), so new
