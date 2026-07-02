@@ -9,6 +9,10 @@ final class FeedViewModel: ObservableObject, PostInteracting {
     @Published var errorMessage: String?
     @Published var actionError: String?
 
+    /// Timeline filters passed to `GET /api/feed`.
+    @Published var includeReplies = false
+    @Published var includeBoosts = true
+
     private var cursor: String?
     private var reachedEnd = false
     /// Guards concurrent first-page loads (toolbar Refresh / pull-to-refresh / ⌘R)
@@ -23,7 +27,7 @@ final class FeedViewModel: ObservableObject, PostInteracting {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let page = try await client.feed()
+            let page = try await client.feed(replies: includeReplies, boosts: includeBoosts)
             guard token == loadToken else { return } // superseded by a newer load
             posts = page.posts
             cursor = page.nextCursor
@@ -43,7 +47,7 @@ final class FeedViewModel: ObservableObject, PostInteracting {
         isLoadingMore = true
         defer { isLoadingMore = false }
         do {
-            let page = try await client.feed(cursor: cursor)
+            let page = try await client.feed(cursor: cursor, replies: includeReplies, boosts: includeBoosts)
             posts.append(contentsOf: page.posts)
             self.cursor = page.nextCursor
             reachedEnd = page.nextCursor == nil

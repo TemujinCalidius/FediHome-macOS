@@ -11,6 +11,13 @@ struct FeedView: View {
         content
             .navigationTitle("Feed")
             .toolbar {
+                Menu {
+                    Toggle("Show replies", isOn: filterBinding(\.includeReplies))
+                    Toggle("Show boosts", isOn: filterBinding(\.includeBoosts))
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+                .help("Filter timeline")
                 Button {
                     Task { await model.loadFirst(session: session) }
                 } label: {
@@ -92,6 +99,14 @@ struct FeedView: View {
 
     private var actionErrorBinding: Binding<Bool> {
         Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })
+    }
+
+    /// A toggle that flips a feed filter and reloads with the new query.
+    private func filterBinding(_ keyPath: ReferenceWritableKeyPath<FeedViewModel, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { model[keyPath: keyPath] },
+            set: { model[keyPath: keyPath] = $0; Task { await model.loadFirst(session: session) } }
+        )
     }
 }
 
