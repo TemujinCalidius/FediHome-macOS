@@ -4,7 +4,10 @@ import UniformTypeIdentifiers
 struct ComposeView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = ComposeViewModel()
-    @State private var showingPhotoImporter = false
+
+    private enum ImporterMode { case photo, audio }
+    @State private var importerMode: ImporterMode = .photo
+    @State private var showingImporter = false
 
     var body: some View {
         ScrollView {
@@ -22,6 +25,8 @@ struct ComposeView: View {
                 if model.isArticle { descriptionEditor }
 
                 if !model.attachments.isEmpty { photoStrip }
+                if model.includeVideo && !model.isDraft { videoSection }
+                if !model.audioAttachments.isEmpty && !model.isDraft { audioSection }
 
                 controls
                 publishingOptions
@@ -49,11 +54,14 @@ struct ComposeView: View {
             .keyboardShortcut(.return, modifiers: .command)
             .help(model.isScheduling ? "Schedule for later" : "Publish")
         }
-        .fileImporter(isPresented: $showingPhotoImporter,
-                      allowedContentTypes: [.image],
+        .fileImporter(isPresented: $showingImporter,
+                      allowedContentTypes: importerMode == .photo ? [.image] : [.mp3],
                       allowsMultipleSelection: true) { result in
             if case .success(let urls) = result {
-                Task { await model.addPhotos(urls: urls, session: session) }
+                switch importerMode {
+                case .photo: Task { await model.addPhotos(urls: urls, session: session) }
+                case .audio: Task { await model.addAudio(urls: urls, session: session) }
+                }
             }
         }
     }
@@ -117,25 +125,129 @@ struct ComposeView: View {
     }
 
     private var photoStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(model.attachments) { attachment in
-                    ZStack(alignment: .topTrailing) {
-                        thumbnail(attachment.previewData)
-                            .frame(width: 96, height: 96)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        Button {
-                            model.removeAttachment(attachment)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.white, .black.opacity(0.6))
+        VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach($model.attachments) { $attachment in
+                        VStack(spacing: 4) {
+                            ZStack(alignment: .topTrailing) {
+                                thumbnail(attachment.previewData)
+                                    .frame(width: 132, height: 96)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                Button {
+                                    model.removeAttachment(attachment)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.white, .black.opacity(0.6))
+                                }
+                                .buttonStyle(.plain)
+                                .padding(3)
+                            }
+                            if !model.isDraft {
+                                TextField("Caption", text: $attachment.alt)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.caption)
+                                    .frame(width: 132)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .padding(3)
                     }
                 }
             }
+            if !model.isDraft {
+                HStack(spacing: 10) {
+                    Toggle("Add to photo gallery", isOn: $model.addPhotosToGallery)
+                        .toggleStyle(.checkbox)
+                        .font(.callout)
+                    if model.addPhotosToGallery {
+                        TextField("Category (optional)", text: $model.photoCategory)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 180)
+                            .font(.callout)
+                    }
+                    Spacer()
+                }
+            }
         }
+    }
+
+    /// Video embed by URL (the file stays on its host; the instance stores embed metadata).
+    private var videoSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("Video", systemImage: "play.rectangle").font(.caption).bold().foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    model.includeVideo = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Remove video")
+            }
+            TextField("Video URL (PeerTube / MakerTube / YouTube / Vimeo)", text: $model.videoURLString)
+                .textFieldStyle(.roundedBorder)
+            if model.videoURLInvalid {
+                Label("That URL isn't a recognized video host.", systemImage: "exclamationmark.triangle")
+                    .font(.caption).foregroundStyle(.orange)
+            } else if let info = model.videoEmbedInfo {
+                Label("Will embed from \(info.embedHost)", systemImage: "checkmark.circle")
+                    .font(.caption).foregroundStyle(.green)
+            }
+            TextField("Video title", text: $model.videoTitle)
+                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 10) {
+                Toggle("Add to videos gallery", isOn: $model.addVideoToGallery)
+                    .toggleStyle(.checkbox)
+                    .font(.callout)
+                if model.addVideoToGallery {
+                    TextField("Category (optional)", text: $model.videoCategory)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 180)
+                        .font(.callout)
+                }
+                Spacer()
+            }
+        }
+        .padding(10)
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// Uploaded audio files → the post renders an audio player per track.
+    private var audioSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Audio", systemImage: "waveform").font(.caption).bold().foregroundStyle(.secondary)
+            ForEach($model.audioAttachments) { $audio in
+                HStack(spacing: 8) {
+                    Image(systemName: "music.note").foregroundStyle(.tint)
+                    TextField("Track title", text: $audio.title)
+                        .textFieldStyle(.roundedBorder)
+                    if let seconds = audio.durationSec {
+                        Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond)))
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    Button {
+                        model.removeAudio(audio)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            HStack(spacing: 10) {
+                Toggle("Add to audio gallery", isOn: $model.addAudioToGallery)
+                    .toggleStyle(.checkbox)
+                    .font(.callout)
+                if model.addAudioToGallery {
+                    TextField("Category (optional)", text: $model.audioCategory)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 180)
+                        .font(.callout)
+                }
+                Spacer()
+            }
+        }
+        .padding(10)
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder private func thumbnail(_ data: Data) -> some View {
@@ -149,11 +261,29 @@ struct ComposeView: View {
     private var controls: some View {
         HStack(spacing: 12) {
             Button {
-                showingPhotoImporter = true
+                importerMode = .photo
+                showingImporter = true
             } label: {
                 Label("Add Photo", systemImage: "photo.badge.plus")
             }
             .disabled(model.isUploading)
+
+            if !model.isDraft {
+                Button {
+                    model.includeVideo = true
+                } label: {
+                    Label("Add Video", systemImage: "play.rectangle")
+                }
+                .disabled(model.includeVideo)
+
+                Button {
+                    importerMode = .audio
+                    showingImporter = true
+                } label: {
+                    Label("Add Audio", systemImage: "waveform.badge.plus")
+                }
+                .disabled(model.isUploading)
+            }
 
             if model.isUploading { ProgressView().controlSize(.small) }
 
@@ -162,6 +292,7 @@ struct ComposeView: View {
             Toggle("Save as draft", isOn: $model.isDraft)
                 .toggleStyle(.checkbox)
                 .disabled(model.isScheduling) // drafts publish via Micropub; scheduling via /api/compose
+                .help(model.isDraft ? "Drafts save text and photos (captions/galleries/video/audio publish-only)" : "")
         }
     }
 

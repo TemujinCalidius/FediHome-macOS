@@ -8,6 +8,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Photo captions & galleries, video and audio posts.** Photos get a per-image **caption** field and
+  an **"Add to photo gallery"** toggle (with optional category); **Add Video** takes a
+  PeerTube/MakerTube/YouTube/Vimeo URL (the app derives the embed automatically) with an
+  **"Add to videos gallery"** toggle; **Add Audio** uploads MP3s (title per track, duration shown)
+  with an **"Add to audio gallery"** toggle — matching the instance's Photography/Videos/Audio
+  sections. (Closes the app side of #4.)
 - **Article descriptions & scheduled posts.** Composing now uses FediHome's rich compose API:
   adding a title reveals a **Description** field (the article's excerpt, ~300 chars), a **Schedule
   for later** toggle publishes the post server-side at the chosen time (it lives on your instance,
