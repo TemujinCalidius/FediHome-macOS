@@ -10,6 +10,8 @@ final class PeopleViewModel: ObservableObject {
     @Published var followHandle = ""
     @Published private(set) var isFollowing = false
     @Published var actionMessage: String?
+    /// Resolved profile from the lookup field — shown as a discovery card.
+    @Published var discovered: Profile?
 
     func load(session: SessionStore) async {
         guard let client = session.client else { return }
@@ -22,6 +24,29 @@ final class PeopleViewModel: ObservableObject {
             session.reportUnauthorized()
         } catch {
             errorMessage = Self.message(for: error)
+        }
+    }
+
+    /// Resolve a handle to a profile (discovery card with a Follow button). Falls back
+    /// to a direct follow on older instances without `/api/profile`.
+    func lookup(session: SessionStore) async {
+        guard let client = session.client else { return }
+        guard let handle = Self.normalizedHandle(followHandle) else {
+            actionMessage = "Enter a handle like @name@server.social"
+            return
+        }
+        isFollowing = true
+        actionMessage = nil
+        defer { isFollowing = false }
+        do {
+            discovered = try await client.profile(handle: handle)
+            followHandle = ""
+        } catch APIError.unauthorized {
+            session.reportUnauthorized()
+        } catch APIError.http(let status, _) where status == 404 {
+            await follow(session: session) // older instance — follow directly
+        } catch {
+            actionMessage = Self.message(for: error)
         }
     }
 
