@@ -19,7 +19,11 @@ struct NotificationsView: View {
                 .help("Refresh")
             }
             .task {
-                if model.response == nil { await model.load(session: session) }
+                // Poll while Notifications is open so new likes/boosts/replies show up on their own.
+                while !Task.isCancelled {
+                    await model.load(session: session)
+                    try? await Task.sleep(for: .seconds(30))
+                }
             }
             .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
     }

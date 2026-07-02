@@ -19,7 +19,13 @@ struct DirectMessagesView: View {
                         .help("Refresh")
                 }
         }
-        .task { if model.conversations.isEmpty { await model.load(session: session) } }
+        .task {
+            // Poll while the Messages section is open so incoming DMs appear without a manual refresh.
+            while !Task.isCancelled {
+                await model.load(session: session)
+                try? await Task.sleep(for: .seconds(20))
+            }
+        }
         .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
         .sheet(isPresented: $showingNew) {
             NewDMView { handle, text in
@@ -92,13 +98,17 @@ private struct DMThreadView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(conversation?.messages ?? []) { message in
-                        MessageBubble(message: message)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(conversation?.messages ?? []) { message in
+                            MessageBubble(message: message).id(message.id)
+                        }
                     }
+                    .padding(12)
                 }
-                .padding(12)
+                .onAppear { scrollToBottom(proxy) }
+                .onChange(of: conversation?.messages.count) { scrollToBottom(proxy) }
             }
             Divider()
             composer
@@ -131,6 +141,11 @@ private struct DMThreadView: View {
         }
     }
 
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        guard let last = conversation?.messages.last else { return }
+        withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(last.id, anchor: .bottom) }
+    }
+
     private func send() {
         guard let conversation, !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         let text = draft
@@ -146,11 +161,19 @@ private struct DMThreadView: View {
 private struct MessageBubble: View {
     let message: DirectMessage
 
+    /// DMs arrive with HTML in `content`; render it cleanly like posts.
+    private var rendered: AttributedString {
+        let source = (message.contentHtml?.isEmpty == false) ? message.contentHtml! : message.content
+        let attributed = FediHTML.attributedString(from: source)
+        return attributed.characters.isEmpty ? AttributedString(message.content) : attributed
+    }
+
     var body: some View {
         HStack {
             if message.isOutgoing { Spacer(minLength: 40) }
             VStack(alignment: message.isOutgoing ? .trailing : .leading, spacing: 2) {
-                Text(message.content)
+                Text(rendered)
+                    .tint(message.isOutgoing ? .white : .accentColor)
                     .textSelection(.enabled)
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(message.isOutgoing ? AnyShapeStyle(.tint) : AnyShapeStyle(.quaternary),

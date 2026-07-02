@@ -7,6 +7,13 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Fixed
+- **Direct messages rendered raw HTML tags** — incoming DM content is now rendered cleanly (via the
+  same HTML renderer as posts) instead of showing literal `<p>` tags.
+- **Notifications and DMs now refresh on their own** while their section is open (polling), so new
+  likes/boosts/replies and incoming messages appear without a manual refresh.
+- **Unreadable "Unfollow" button** on the profile card (dark-on-dark) — now a legible bordered button.
+
 ### Added
 - **Menu-bar presence.** A status-bar item showing unread notification + message counts with quick
   actions (open, jump to a section, New Post, refresh, disconnect), plus native app-menu commands —
