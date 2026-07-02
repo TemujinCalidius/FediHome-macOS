@@ -3,23 +3,21 @@ import FediHomeKit
 
 struct MainView: View {
     @EnvironmentObject private var session: SessionStore
-
-    enum Section: Hashable { case feed, notifications, compose, people, messages }
-    @State private var selection: Section? = .feed
+    @EnvironmentObject private var navigator: Navigator
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selection) {
-                Label("Feed", systemImage: "house").tag(Section.feed)
-                Label("Notifications", systemImage: "bell").tag(Section.notifications)
-                Label("New Post", systemImage: "square.and.pencil").tag(Section.compose)
-                Label("People", systemImage: "person.2").tag(Section.people)
-                Label("Messages", systemImage: "bubble.left.and.bubble.right").tag(Section.messages)
+            List(selection: sectionSelection) {
+                Label("Feed", systemImage: "house").tag(AppSection.feed)
+                Label("Notifications", systemImage: "bell").tag(AppSection.notifications)
+                Label("New Post", systemImage: "square.and.pencil").tag(AppSection.compose)
+                Label("People", systemImage: "person.2").tag(AppSection.people)
+                Label("Messages", systemImage: "bubble.left.and.bubble.right").tag(AppSection.messages)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
             .safeAreaInset(edge: .bottom) { accountFooter }
         } detail: {
-            switch selection ?? .feed {
+            switch navigator.section {
             case .feed: FeedView()
             case .notifications: NotificationsView()
             case .compose: ComposeView()
@@ -27,6 +25,10 @@ struct MainView: View {
             case .messages: DirectMessagesView()
             }
         }
+    }
+
+    private var sectionSelection: Binding<AppSection?> {
+        Binding(get: { navigator.section }, set: { navigator.section = $0 ?? .feed })
     }
 
     private var accountFooter: some View {

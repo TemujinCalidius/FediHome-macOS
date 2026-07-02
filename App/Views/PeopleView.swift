@@ -3,6 +3,7 @@ import FediHomeKit
 
 struct PeopleView: View {
     @EnvironmentObject private var session: SessionStore
+    @EnvironmentObject private var navigator: Navigator
     @StateObject private var model = PeopleViewModel()
     @State private var tab: Tab = .following
 
@@ -24,6 +25,7 @@ struct PeopleView: View {
             .help("Refresh")
         }
         .task { if model.graph == nil { await model.load(session: session) } }
+        .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
     }
 
     private var followBar: some View {
