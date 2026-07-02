@@ -111,6 +111,17 @@ public actor FediHomeClient {
         try await get("/api/graph")
     }
 
+    /// `GET /api/profile?actor=` — a known actor's full profile (`read` scope).
+    public func profile(actor: String) async throws -> Profile {
+        try await get("/api/profile", query: [URLQueryItem(name: "actor", value: actor)])
+    }
+
+    /// `GET /api/profile?handle=@user@domain` — resolve/discover by handle (`read`
+    /// scope). Unknown actors return a lightweight card (`partial: true`).
+    public func profile(handle: String) async throws -> Profile {
+        try await get("/api/profile", query: [URLQueryItem(name: "handle", value: handle)])
+    }
+
     /// Follow a fediverse actor by `@user@domain` (`interact` scope; server resolves via WebFinger).
     public func follow(handle: String) async throws {
         try await admin(action: "follow", ["handle": handle])

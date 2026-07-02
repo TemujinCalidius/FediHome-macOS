@@ -31,13 +31,17 @@ struct PeopleView: View {
     private var followBar: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                TextField("Follow someone — @name@server.social", text: $model.followHandle)
+                TextField("Find someone — @name@server.social", text: $model.followHandle)
                     .textFieldStyle(.roundedBorder)
-                    .onSubmit { Task { await model.follow(session: session) } }
+                    .onSubmit { Task { await model.lookup(session: session) } }
                 Button {
-                    Task { await model.follow(session: session) }
+                    Task { await model.lookup(session: session) }
                 } label: {
-                    if model.isFollowing { ProgressView().controlSize(.small) } else { Text("Follow") }
+                    if model.isFollowing {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Label("Find", systemImage: "magnifyingglass")
+                    }
                 }
                 .disabled(model.isFollowing || model.followHandle.trimmingCharacters(in: .whitespaces).isEmpty)
             }
@@ -46,6 +50,22 @@ struct PeopleView: View {
             }
         }
         .padding(12)
+        .sheet(item: $model.discovered) { found in
+            VStack(spacing: 0) {
+                ProfileView(target: ProfileTarget(profile: found),
+                            baseURL: session.resolvedBaseURL,
+                            prefetched: found)
+                Divider()
+                HStack {
+                    Spacer()
+                    Button("Done") { model.discovered = nil }
+                        .keyboardShortcut(.cancelAction)
+                }
+                .padding(10)
+            }
+            .frame(width: 320)
+            .onDisappear { Task { await model.load(session: session) } } // reflect a follow
+        }
     }
 
     private var picker: some View {

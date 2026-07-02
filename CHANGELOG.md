@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Full profiles & finding people.** Profile cards now show the person's **header, bio, and
+  follower/following/post counts** (plus a "Follows you" badge), powered by the new profile
+  endpoint. The People search field resolves any `@name@server` into a **discovery card** you can
+  follow from — including people your instance has never seen. Older instances gracefully fall
+  back to the lightweight card / direct follow. (Closes the app side of #5 and #6.)
 - **My Posts.** A content manager for your instance (⌘6): every post — published, **scheduled**
   (with its publish time), and **drafts** — with type filters (notes/articles/journal/photo/video/
   audio), like/boost counts, media summaries, open-in-browser, and **delete** (a scheduled post's
