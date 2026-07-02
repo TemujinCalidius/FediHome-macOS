@@ -8,6 +8,8 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Fixed
+- **Clicking a notification no longer errors (-50)** — relative target paths (e.g. `/post/slug`) are
+  resolved against the instance URL before opening.
 - **Notifications are now actionable** — a **Mark all read** button (clears the count + menu-bar
   badge), an unread dot on new items, and clicking a notification opens its post/actor. The DM badge
   also clears as conversations are read.
