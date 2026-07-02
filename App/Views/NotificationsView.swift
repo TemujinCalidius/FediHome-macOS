@@ -7,11 +7,28 @@ struct NotificationsView: View {
     @EnvironmentObject private var badge: BadgeModel
     @Environment(\.openURL) private var openURL
     @StateObject private var model = NotificationsViewModel()
+    @State private var filter: NotificationFilter = .all
+
+    private var filteredItems: [NotificationItem] {
+        filter == .all ? model.items : model.items.filter { filter.matches($0.type) }
+    }
+    /// The newest `unreadCount` items are unread — as a set so filtering doesn't break it.
+    private var unreadIDs: Set<String> {
+        Set(model.items.prefix(model.unreadCount).map(\.id))
+    }
 
     var body: some View {
         content
             .navigationTitle(title)
             .toolbar {
+                Menu {
+                    Picker("Filter", selection: $filter) {
+                        ForEach(NotificationFilter.allCases) { Text($0.label).tag($0) }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+                .help("Filter")
                 Button {
                     Task { await model.markAllRead(session: session); badge.setNotificationCount(0) }
                 } label: {
@@ -67,14 +84,43 @@ struct NotificationsView: View {
         } else if model.items.isEmpty {
             ContentUnavailableView("No notifications", systemImage: "bell",
                                    description: Text("You're all caught up."))
+        } else if filteredItems.isEmpty {
+            ContentUnavailableView("No \(filter.label.lowercased())", systemImage: "line.3.horizontal.decrease.circle")
         } else {
-            List(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                NotificationRow(item: item, baseURL: session.resolvedBaseURL, isUnread: index < model.unreadCount)
+            List(filteredItems) { item in
+                NotificationRow(item: item, baseURL: session.resolvedBaseURL, isUnread: unreadIDs.contains(item.id))
                     .contentShape(Rectangle())
                     .onTapGesture { open(item) }
             }
             .listStyle(.inset)
             .refreshable { await model.load(session: session) }
+        }
+    }
+}
+
+enum NotificationFilter: String, CaseIterable, Identifiable {
+    case all, mentions, likes, boosts, follows, dms
+
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: return "All"
+        case .mentions: return "Replies & mentions"
+        case .likes: return "Likes"
+        case .boosts: return "Boosts"
+        case .follows: return "Follows"
+        case .dms: return "Messages"
+        }
+    }
+
+    func matches(_ type: NotificationItem.Kind) -> Bool {
+        switch self {
+        case .all: return true
+        case .mentions: return type == .reply || type == .comment
+        case .likes: return type == .like
+        case .boosts: return type == .boost
+        case .follows: return type == .follow
+        case .dms: return type == .dm
         }
     }
 }
