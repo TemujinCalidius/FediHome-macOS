@@ -77,18 +77,21 @@ struct ProfileView: View {
             Button("Block", role: .destructive) { Task { await block() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Blocking unfollows them and deletes their posts + interactions from your instance.")
+            Text("Blocking unfollows them and deletes their posts + interactions from your instance. There's no unblock in the app yet.")
         }
     }
 
     @ViewBuilder private var followButton: some View {
         if let isFollowing, !busy {
-            Button(isFollowing ? "Unfollow" : "Follow") {
-                Task { await toggleFollow(currently: isFollowing) }
+            if isFollowing {
+                Button("Unfollow") { Task { await toggleFollow(currently: true) } }
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Button("Follow") { Task { await toggleFollow(currently: false) } }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(isFollowing ? .secondary : .accentColor)
-            .frame(maxWidth: .infinity)
         } else {
             ProgressView().controlSize(.small).frame(maxWidth: .infinity)
         }
