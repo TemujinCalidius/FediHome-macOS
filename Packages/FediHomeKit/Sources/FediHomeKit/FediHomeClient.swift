@@ -99,6 +99,27 @@ public actor FediHomeClient {
         try await postVoid("/api/admin", body: body)
     }
 
+    // MARK: Compose (`create` / `media` scopes)
+
+    /// `POST /api/media` — upload an image or audio file (multipart `file` field).
+    public func uploadMedia(_ data: Data, filename: String, mimeType: String) async throws -> MediaUpload {
+        let request = try makeMultipart(path: "/api/media", fieldName: "file",
+                                        filename: filename, mimeType: mimeType, fileData: data)
+        return try decode(from: try await sendFull(request).0)
+    }
+
+    /// `POST /api/micropub` — create a note (no title → the instance's Journal) or an
+    /// article (title provided). Attaches already-uploaded `photoURLs`. Returns the new
+    /// post's URL (from the 201 `Location` header), when present.
+    @discardableResult
+    public func createPost(content: String, title: String? = nil,
+                           photoURLs: [String] = [], draft: Bool = false) async throws -> URL? {
+        let body = Micropub.hEntry(content: content, title: title, photoURLs: photoURLs, draft: draft)
+        let request = try makePOST(path: "/api/micropub", body: body)
+        let (_, response) = try await sendFull(request)
+        return response.value(forHTTPHeaderField: "Location").flatMap(URL.init(string:))
+    }
+
     // MARK: Request plumbing
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = []) async throws -> T {
@@ -125,6 +146,24 @@ public actor FediHomeClient {
         return request
     }
 
+    private func makeMultipart(path: String, fieldName: String, filename: String,
+                               mimeType: String, fileData: Data) throws -> URLRequest {
+        let boundary = "FediHomeBoundary-\(UUID().uuidString)"
+        var request = URLRequest(url: try makeURL(path: path, query: []))
+        request.httpMethod = "POST"
+        applyDefaults(&request)
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        var body = Data()
+        func appendString(_ string: String) { body.append(Data(string.utf8)) }
+        appendString("--\(boundary)\r\n")
+        appendString("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(filename)\"\r\n")
+        appendString("Content-Type: \(mimeType)\r\n\r\n")
+        body.append(fileData)
+        appendString("\r\n--\(boundary)--\r\n")
+        request.httpBody = body
+        return request
+    }
+
     private func applyDefaults(_ request: inout URLRequest) {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -142,6 +181,11 @@ public actor FediHomeClient {
 
     /// Runs the request and maps HTTP status → `APIError`; returns the 2xx body.
     private func send(_ request: URLRequest) async throws -> Data {
+        try await sendFull(request).0
+    }
+
+    /// Like `send`, but also returns the `HTTPURLResponse` (for the Micropub `Location`).
+    private func sendFull(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
         do {
@@ -154,7 +198,7 @@ public actor FediHomeClient {
         }
         switch http.statusCode {
         case 200..<300:
-            return data
+            return (data, http)
         case 401:
             throw APIError.unauthorized
         case 403:
