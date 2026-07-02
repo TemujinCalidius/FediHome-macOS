@@ -8,6 +8,7 @@ struct PostRowView: View {
     var actions = PostRowActions()
 
     @EnvironmentObject private var imageViewer: ImageViewerModel
+    @State private var showingProfile = false
 
     private var mediaItems: [FediPost.Media] { post.media(relativeTo: baseURL) }
     private var embed: FediPost.EmbedCard? { post.embedCard(relativeTo: baseURL) }
@@ -22,12 +23,23 @@ struct PostRowView: View {
             }
 
             HStack(alignment: .top, spacing: 10) {
-                AsyncAvatar(url: post.avatarURL(relativeTo: baseURL), size: 44)
+                Button { showingProfile = true } label: {
+                    AsyncAvatar(url: post.avatarURL(relativeTo: baseURL), size: 44)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showingProfile, arrowEdge: .trailing) {
+                    ProfileView(target: ProfileTarget(post: post), baseURL: baseURL)
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
-                        Text(post.authorName).font(.headline).lineLimit(1)
-                        Text(post.fediHandle).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                        Button { showingProfile = true } label: {
+                            HStack(spacing: 6) {
+                                Text(post.authorName).font(.headline).lineLimit(1)
+                                Text(post.fediHandle).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        .buttonStyle(.plain)
                         Spacer(minLength: 8)
                         Text(post.publishedAt, format: .relative(presentation: .named))
                             .font(.caption).foregroundStyle(.secondary)

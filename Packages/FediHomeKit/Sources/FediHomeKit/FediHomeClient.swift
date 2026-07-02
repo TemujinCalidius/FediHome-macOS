@@ -99,6 +99,28 @@ public actor FediHomeClient {
         try await postVoid("/api/admin", body: body)
     }
 
+    // MARK: Social graph & people
+
+    /// `GET /api/graph` — followers/following (`read` scope).
+    public func graph() async throws -> SocialGraph {
+        try await get("/api/graph")
+    }
+
+    /// Follow a fediverse actor by `@user@domain` (`interact` scope; server resolves via WebFinger).
+    public func follow(handle: String) async throws {
+        try await admin(action: "follow", ["handle": handle])
+    }
+
+    /// Unfollow by actor URI (`interact` scope).
+    public func unfollow(actorUri: String) async throws {
+        try await admin(action: "unfollow_by_uri", ["actorUri": actorUri])
+    }
+
+    /// Block an actor (`manage` scope) — unfollows and deletes their posts/interactions.
+    public func block(actorUri: String) async throws {
+        try await admin(action: "block", ["actorUri": actorUri])
+    }
+
     // MARK: Compose (`create` / `media` scopes)
 
     /// `POST /api/media` — upload an image or audio file (multipart `file` field).
