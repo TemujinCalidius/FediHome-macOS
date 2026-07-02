@@ -4,7 +4,7 @@ import FediHomeKit
 struct MainView: View {
     @EnvironmentObject private var session: SessionStore
 
-    enum Section: Hashable { case feed, notifications, compose, people }
+    enum Section: Hashable { case feed, notifications, compose, people, messages }
     @State private var selection: Section? = .feed
 
     var body: some View {
@@ -14,6 +14,7 @@ struct MainView: View {
                 Label("Notifications", systemImage: "bell").tag(Section.notifications)
                 Label("New Post", systemImage: "square.and.pencil").tag(Section.compose)
                 Label("People", systemImage: "person.2").tag(Section.people)
+                Label("Messages", systemImage: "bubble.left.and.bubble.right").tag(Section.messages)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
             .safeAreaInset(edge: .bottom) { accountFooter }
@@ -23,6 +24,7 @@ struct MainView: View {
             case .notifications: NotificationsView()
             case .compose: ComposeView()
             case .people: PeopleView()
+            case .messages: DirectMessagesView()
             }
         }
     }
