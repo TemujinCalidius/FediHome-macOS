@@ -7,7 +7,7 @@ struct PeopleView: View {
     @StateObject private var model = PeopleViewModel()
     @State private var tab: Tab = .following
 
-    private enum Tab: Hashable { case following, followers }
+    private enum Tab: Hashable { case following, followers, blocked }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +72,7 @@ struct PeopleView: View {
         Picker("", selection: $tab) {
             Text("Following (\(model.graph?.counts.following ?? 0))").tag(Tab.following)
             Text("Followers (\(model.graph?.counts.followers ?? 0))").tag(Tab.followers)
+            Text("Blocked (\(model.graph?.counts.blocked ?? model.graph?.blockedPeople.count ?? 0))").tag(Tab.blocked)
         }
         .pickerStyle(.segmented)
         .labelsHidden()
@@ -80,17 +81,40 @@ struct PeopleView: View {
     }
 
     @ViewBuilder private var content: some View {
-        let people = tab == .following ? (model.graph?.following ?? []) : (model.graph?.followers ?? [])
         if model.isLoading && model.graph == nil {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = model.errorMessage, model.graph == nil {
             ContentUnavailableView("Couldn't load people", systemImage: "person.2.slash", description: Text(error))
-        } else if people.isEmpty {
+        } else if tab == .blocked {
+            blockedList
+        } else {
+            followList
+        }
+    }
+
+    @ViewBuilder private var followList: some View {
+        let people = tab == .following ? (model.graph?.following ?? []) : (model.graph?.followers ?? [])
+        if people.isEmpty {
             ContentUnavailableView(tab == .following ? "Not following anyone yet" : "No followers yet",
                                    systemImage: "person.2")
         } else {
             List(people) { person in
                 PersonRow(person: person, baseURL: session.resolvedBaseURL)
+            }
+            .listStyle(.inset)
+        }
+    }
+
+    @ViewBuilder private var blockedList: some View {
+        let blocked = model.graph?.blockedPeople ?? []
+        if blocked.isEmpty {
+            ContentUnavailableView("No blocked accounts", systemImage: "hand.raised",
+                                   description: Text("People you block appear here and can be unblocked."))
+        } else {
+            List(blocked) { person in
+                BlockedRow(person: person, baseURL: session.resolvedBaseURL) {
+                    Task { await model.unblock(person, session: session) }
+                }
             }
             .listStyle(.inset)
         }
@@ -124,6 +148,34 @@ struct PersonRow: View {
             if let target = profileTarget {
                 ProfileView(target: target, baseURL: baseURL)
             }
+        }
+    }
+}
+
+private struct BlockedRow: View {
+    let person: BlockedPerson
+    let baseURL: URL
+    let onUnblock: () -> Void
+
+    @State private var confirming = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            AsyncAvatar(url: MediaURL.resolve(person.avatarUrl ?? "", relativeTo: baseURL), size: 40)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(person.name).font(.callout).bold().lineLimit(1)
+                Text(person.handle ?? person.actorUri).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer()
+            Button("Unblock") { confirming = true }
+                .buttonStyle(.bordered)
+        }
+        .padding(.vertical, 2)
+        .confirmationDialog("Unblock \(person.name)?", isPresented: $confirming, titleVisibility: .visible) {
+            Button("Unblock") { onUnblock() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("They'll be able to follow you and interact with your posts again.")
         }
     }
 }

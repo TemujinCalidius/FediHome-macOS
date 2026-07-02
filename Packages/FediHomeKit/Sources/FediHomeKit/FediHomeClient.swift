@@ -137,6 +137,11 @@ public actor FediHomeClient {
         try await admin(action: "block", ["actorUri": actorUri])
     }
 
+    /// Unblock an actor (`manage` scope) — removes the block record and federates Undo(Block).
+    public func unblock(actorUri: String) async throws {
+        try await admin(action: "unblock", ["actorUri": actorUri])
+    }
+
     // MARK: Direct messages (`dm` scope)
 
     /// `GET /api/dms` — all direct messages + per-conversation read state.
