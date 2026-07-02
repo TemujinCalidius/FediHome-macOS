@@ -50,4 +50,36 @@ final class VideoEmbedTests: XCTestCase {
         XCTAssertNil(embed("https://mastodon.social/@user/123")) // profile/post, not a video
         XCTAssertNil(embed("https://example.com")) // no path
     }
+
+    // MARK: embedInfo (compose-side metadata)
+
+    private func info(_ s: String) -> VideoEmbed.EmbedInfo? {
+        URL(string: s).flatMap { VideoEmbed.embedInfo(for: $0) }
+    }
+
+    func testEmbedInfoPeerTube() {
+        let peertube = info("https://makertube.net/w/abcDEF12")
+        XCTAssertEqual(peertube?.embedHost, "makertube.net")
+        XCTAssertEqual(peertube?.embedId, "abcDEF12")
+        XCTAssertEqual(peertube?.iframeSrc, "https://makertube.net/videos/embed/abcDEF12")
+
+        let watch = info("https://framatube.org/videos/watch/9c9de5e8-0a1e")
+        XCTAssertEqual(watch?.iframeSrc, "https://framatube.org/videos/embed/9c9de5e8-0a1e")
+    }
+
+    func testEmbedInfoYouTubeAndVimeo() {
+        let yt = info("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        XCTAssertEqual(yt?.embedHost, "www.youtube.com")
+        XCTAssertEqual(yt?.embedId, "dQw4w9WgXcQ")
+        XCTAssertEqual(yt?.iframeSrc, "https://www.youtube.com/embed/dQw4w9WgXcQ") // no autoplay
+
+        let vimeo = info("https://vimeo.com/123456789")
+        XCTAssertEqual(vimeo?.embedHost, "player.vimeo.com")
+        XCTAssertEqual(vimeo?.iframeSrc, "https://player.vimeo.com/video/123456789")
+    }
+
+    func testEmbedInfoUnrecognizedIsNil() {
+        XCTAssertNil(info("https://example.com/blog/post"))
+        XCTAssertNil(info("https://vimeo.com/channels/staffpicks"))
+    }
 }
