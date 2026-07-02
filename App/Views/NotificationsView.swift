@@ -4,12 +4,21 @@ import FediHomeKit
 struct NotificationsView: View {
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var navigator: Navigator
+    @EnvironmentObject private var badge: BadgeModel
+    @Environment(\.openURL) private var openURL
     @StateObject private var model = NotificationsViewModel()
 
     var body: some View {
         content
             .navigationTitle(title)
             .toolbar {
+                Button {
+                    Task { await model.markAllRead(session: session); badge.setNotificationCount(0) }
+                } label: {
+                    Image(systemName: "checkmark.circle")
+                }
+                .disabled(model.unreadCount == 0)
+                .help("Mark all read")
                 Button {
                     Task { await model.load(session: session) }
                 } label: {
@@ -22,6 +31,7 @@ struct NotificationsView: View {
                 // Poll while Notifications is open so new likes/boosts/replies show up on their own.
                 while !Task.isCancelled {
                     await model.load(session: session)
+                    badge.setNotificationCount(model.unreadCount)
                     try? await Task.sleep(for: .seconds(30))
                 }
             }
@@ -30,6 +40,13 @@ struct NotificationsView: View {
 
     private var title: String {
         model.unreadCount > 0 ? "Notifications (\(model.unreadCount))" : "Notifications"
+    }
+
+    /// Open the notification's target (the post) or the actor, in the browser.
+    private func open(_ item: NotificationItem) {
+        if let string = item.targetUrl ?? item.actorUrl, let url = URL(string: string) {
+            openURL(url)
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -48,8 +65,10 @@ struct NotificationsView: View {
             ContentUnavailableView("No notifications", systemImage: "bell",
                                    description: Text("You're all caught up."))
         } else {
-            List(model.items) { item in
-                NotificationRow(item: item)
+            List(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                NotificationRow(item: item, isUnread: index < model.unreadCount)
+                    .contentShape(Rectangle())
+                    .onTapGesture { open(item) }
             }
             .listStyle(.inset)
             .refreshable { await model.load(session: session) }
@@ -59,6 +78,7 @@ struct NotificationsView: View {
 
 struct NotificationRow: View {
     let item: NotificationItem
+    var isUnread = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -78,6 +98,9 @@ struct NotificationRow: View {
                     .font(.caption).foregroundStyle(.tertiary)
             }
             Spacer()
+            if isUnread {
+                Circle().fill(.tint).frame(width: 8, height: 8)
+            }
         }
         .padding(.vertical, 4)
     }

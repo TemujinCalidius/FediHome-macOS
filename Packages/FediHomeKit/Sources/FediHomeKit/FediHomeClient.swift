@@ -43,6 +43,11 @@ public actor FediHomeClient {
         try await get("/api/notifications")
     }
 
+    /// `POST /api/notifications` — mark all notifications read (`interact` scope).
+    public func markAllNotificationsRead() async throws {
+        try await postVoid("/api/notifications", body: [:])
+    }
+
     /// `POST /api/fedi-post-counts` — lazily fetch a post's like/boost/reply counts
     /// (`read` scope). `postId` is the local `FediPost.id`, not the apId.
     public func postCounts(postId: String) async throws -> PostCounts {

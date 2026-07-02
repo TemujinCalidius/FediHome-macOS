@@ -4,6 +4,7 @@ import FediHomeKit
 struct DirectMessagesView: View {
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var navigator: Navigator
+    @EnvironmentObject private var badge: BadgeModel
     @StateObject private var model = DirectMessagesViewModel()
     @State private var showingNew = false
 
@@ -23,6 +24,7 @@ struct DirectMessagesView: View {
             // Poll while the Messages section is open so incoming DMs appear without a manual refresh.
             while !Task.isCancelled {
                 await model.load(session: session)
+                badge.setUnreadMessages(model.conversations.filter(\.unread).count)
                 try? await Task.sleep(for: .seconds(20))
             }
         }
@@ -64,12 +66,19 @@ private struct DMConversationRow: View {
     let conversation: DMConversation
     let baseURL: URL
 
+    /// Plain-text preview (DM content carries HTML; strip it for the list snippet).
+    private var snippet: String {
+        guard let latest = conversation.latest else { return "" }
+        let source = (latest.contentHtml?.isEmpty == false) ? latest.contentHtml! : latest.content
+        return FediHTML.plainText(from: source)
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             AsyncAvatar(url: MediaURL.resolve(conversation.partnerAvatar ?? "", relativeTo: baseURL), size: 40)
             VStack(alignment: .leading, spacing: 1) {
                 Text(conversation.partnerName).font(.callout).bold().lineLimit(1)
-                Text(conversation.latest?.content ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(snippet).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
