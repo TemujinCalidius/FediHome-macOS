@@ -8,6 +8,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **My Posts.** A content manager for your instance (⌘6): every post — published, **scheduled**
+  (with its publish time), and **drafts** — with type filters (notes/articles/journal/photo/video/
+  audio), like/boost counts, media summaries, open-in-browser, and **delete** (a scheduled post's
+  delete doubles as *cancel*). (Closes the app side of #15.)
 - **Photo captions & galleries, video and audio posts.** Photos get a per-image **caption** field and
   an **"Add to photo gallery"** toggle (with optional category); **Add Video** takes a
   PeerTube/MakerTube/YouTube/Vimeo URL (the app derives the embed automatically) with an

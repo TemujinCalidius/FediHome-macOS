@@ -37,6 +37,7 @@ struct FediHomeApp: App {
                 Button("New Post") { navigator.go(.compose) }.keyboardShortcut("3", modifiers: .command)
                 Button("People") { navigator.go(.people) }.keyboardShortcut("4", modifiers: .command)
                 Button("Messages") { navigator.go(.messages) }.keyboardShortcut("5", modifiers: .command)
+                Button("My Posts") { navigator.go(.myPosts) }.keyboardShortcut("6", modifiers: .command)
                 Divider()
                 Button("Refresh") { navigator.refresh() }.keyboardShortcut("r", modifiers: .command)
             }
