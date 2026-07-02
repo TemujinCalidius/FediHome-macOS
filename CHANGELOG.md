@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Compose a new post.** A "New Post" section to publish via Micropub: a note with no title lands in
+  the instance's Journal, while adding a title makes it an Article; a live character counter nudges
+  long no-title posts toward an Article. Attach photos (uploaded via `/api/media`, shown as thumbnails)
+  and optionally save as a draft. Photo captions/galleries, video, and audio compose need a FediHome
+  server change (tracked in #4).
 - **Reply to a specific person.** The reply composer (feed and thread) is prefilled with the
   target's @handle so a reply is addressed to that person, and the thread's inline reply bar has an
   **@-mention menu** of the other participants to pull a specific person into the reply. Typed
