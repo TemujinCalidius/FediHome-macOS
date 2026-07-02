@@ -69,7 +69,7 @@ struct NotificationsView: View {
                                    description: Text("You're all caught up."))
         } else {
             List(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                NotificationRow(item: item, isUnread: index < model.unreadCount)
+                NotificationRow(item: item, baseURL: session.resolvedBaseURL, isUnread: index < model.unreadCount)
                     .contentShape(Rectangle())
                     .onTapGesture { open(item) }
             }
@@ -81,12 +81,19 @@ struct NotificationsView: View {
 
 struct NotificationRow: View {
     let item: NotificationItem
+    var baseURL: URL?
     var isUnread = false
+
+    private var avatarURL: URL? {
+        guard let raw = item.avatarUrl else { return nil }
+        if let baseURL { return MediaURL.resolve(raw, relativeTo: baseURL) }
+        return URL(string: raw)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             ZStack(alignment: .bottomTrailing) {
-                AsyncAvatar(url: item.avatarURL, size: 36)
+                AsyncAvatar(url: avatarURL, size: 36)
                 Image(systemName: symbol)
                     .font(.caption2)
                     .padding(3)

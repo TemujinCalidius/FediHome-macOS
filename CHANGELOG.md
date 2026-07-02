@@ -12,6 +12,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   PR to (and push to) `dev`/`main` (XcodeGen-generated project, Xcode 16 / Swift 6).
 
 ### Fixed
+- **Read notifications no longer resurrect themselves** — a stale in-flight poll could overwrite a
+  just-completed *mark all read* (and the menu-bar badge); loads now discard superseded responses
+  (same guard added to the feed and DM loads).
+- **Compose no longer loses text typed while posting** — the editor is disabled during an in-flight post.
+- **Notification avatars** now resolve relative paths against the instance URL (were sometimes blank).
+- **Menu-bar "Open" reuses the existing window** instead of occasionally opening a duplicate.
 - **Clicking a notification no longer errors (-50)** — relative target paths (e.g. `/post/slug`) are
   resolved against the instance URL before opening.
 - **Notifications are now actionable** — a **Mark all read** button (clears the count + menu-bar

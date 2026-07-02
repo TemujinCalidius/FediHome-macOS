@@ -8,7 +8,9 @@ struct FediHomeApp: App {
     @StateObject private var badge = BadgeModel()
 
     var body: some Scene {
-        WindowGroup(id: "main") {
+        // A single Window (not a WindowGroup) so opening from the menu bar reuses the
+        // existing window instead of spawning duplicates.
+        Window("FediHome", id: "main") {
             RootView()
                 .environmentObject(session)
                 .environmentObject(imageViewer)
