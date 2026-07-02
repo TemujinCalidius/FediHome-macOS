@@ -3,7 +3,8 @@ import UniformTypeIdentifiers
 
 struct ComposeView: View {
     @EnvironmentObject private var session: SessionStore
-    @StateObject private var model = ComposeViewModel()
+    /// Owned by MainView so an in-progress post survives switching sidebar sections.
+    @ObservedObject var model: ComposeViewModel
 
     private enum ImporterMode { case photo, audio }
     @State private var importerMode: ImporterMode = .photo
@@ -31,6 +32,10 @@ struct ComposeView: View {
                 controls
                 publishingOptions
 
+                if let reason = model.blockedReason, hasAnyInput {
+                    Label(reason, systemImage: "info.circle")
+                        .font(.caption).foregroundStyle(.orange)
+                }
                 if let success = model.successURL { successBanner(success) }
                 if let error = model.errorMessage { errorBanner(error) }
             }
@@ -55,7 +60,8 @@ struct ComposeView: View {
             .help(model.isScheduling ? "Schedule for later" : "Publish")
         }
         .fileImporter(isPresented: $showingImporter,
-                      allowedContentTypes: importerMode == .photo ? [.image] : [.mp3],
+                      // Only types /api/media accepts (an unmapped image would 400).
+                      allowedContentTypes: importerMode == .photo ? [.jpeg, .png, .webP, .gif, .heic] : [.mp3],
                       allowsMultipleSelection: true) { result in
             if case .success(let urls) = result {
                 switch importerMode {
@@ -64,6 +70,13 @@ struct ComposeView: View {
                 }
             }
         }
+    }
+
+    /// Whether the user has started something (gates the blocked-reason hint so an
+    /// empty composer isn't nagged).
+    private var hasAnyInput: Bool {
+        !model.content.isEmpty || !model.title.isEmpty || !model.attachments.isEmpty
+            || !model.audioAttachments.isEmpty || model.includeVideo || model.isScheduling
     }
 
     private var typeBadge: some View {
@@ -330,6 +343,9 @@ struct ComposeView: View {
                 .foregroundStyle(.green)
             if let when = model.scheduledConfirmation {
                 Text("Scheduled for \(when.formatted(date: .abbreviated, time: .shortened)).")
+            } else if model.savedAsDraft {
+                Text("Draft saved.")
+                Link("Open", destination: url)
             } else {
                 Text("Posted.")
                 Link("View post", destination: url)

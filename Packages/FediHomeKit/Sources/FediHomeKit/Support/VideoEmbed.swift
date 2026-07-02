@@ -16,7 +16,7 @@ public enum VideoEmbed {
         if host == "youtu.be" {
             return segments.first.flatMap(youtubeEmbed)
         }
-        if host.hasSuffix("youtube.com") || host.hasSuffix("youtube-nocookie.com") {
+        if isDomain(host, "youtube.com") || isDomain(host, "youtube-nocookie.com") {
             if url.path == "/watch", let v = queryValue(url, "v") { return youtubeEmbed(v) }
             if segments.count >= 2, ["shorts", "embed", "live", "v"].contains(segments[0]) {
                 return youtubeEmbed(segments[1])
@@ -28,7 +28,7 @@ public enum VideoEmbed {
         if host == "player.vimeo.com" {
             return withAutoplay(url)
         }
-        if host.hasSuffix("vimeo.com") {
+        if isDomain(host, "vimeo.com") {
             if let id = segments.first, !id.isEmpty, id.allSatisfy(\.isNumber) {
                 return URL(string: "https://player.vimeo.com/video/\(id)?autoplay=1")
             }
@@ -36,14 +36,28 @@ public enum VideoEmbed {
         }
 
         // PeerTube (heuristic across instances): /w/<id> and /videos/watch|embed/<id>
-        if segments.count == 2, segments[0] == "w" {
+        if segments.count == 2, segments[0] == "w", isLikelyPeerTubeID(segments[1]) {
             return URL(string: "\(scheme)://\(host)/videos/embed/\(segments[1])?autoplay=1")
         }
-        if segments.count == 3, segments[0] == "videos", segments[1] == "watch" || segments[1] == "embed" {
+        if segments.count == 3, segments[0] == "videos", segments[1] == "watch" || segments[1] == "embed",
+           isLikelyPeerTubeID(segments[2]) {
             return URL(string: "\(scheme)://\(host)/videos/embed/\(segments[2])?autoplay=1")
         }
 
         return nil
+    }
+
+    /// Exact-domain-or-subdomain match: `youtube.com` and `m.youtube.com` yes,
+    /// `fakeyoutube.com` no (a bare `hasSuffix` would match it).
+    private static func isDomain(_ host: String, _ domain: String) -> Bool {
+        host == domain || host.hasSuffix("." + domain)
+    }
+
+    /// PeerTube ids are shortUUIDs (~22 alphanumerics) or UUIDs — never words or
+    /// filenames. Rejects Wikipedia-style `/w/index.php` (dot) and short pages
+    /// like `/w/about` (length).
+    private static func isLikelyPeerTubeID(_ id: String) -> Bool {
+        id.count >= 12 && id.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
     }
 
     /// Whether the URL is a recognized, in-app-playable video host.
@@ -68,7 +82,7 @@ public enum VideoEmbed {
             return EmbedInfo(embedHost: "www.youtube.com", embedId: id,
                              iframeSrc: "https://www.youtube.com/embed/\(id)")
         }
-        if host.hasSuffix("youtube.com") || host.hasSuffix("youtube-nocookie.com") {
+        if isDomain(host, "youtube.com") || isDomain(host, "youtube-nocookie.com") {
             var id: String?
             if url.path == "/watch" { id = queryValue(url, "v") }
             else if segments.count >= 2, ["shorts", "embed", "live", "v"].contains(segments[0]) { id = segments[1] }
@@ -80,18 +94,19 @@ public enum VideoEmbed {
         }
 
         // Vimeo
-        if host.hasSuffix("vimeo.com"), host != "player.vimeo.com",
+        if isDomain(host, "vimeo.com"), host != "player.vimeo.com",
            let id = segments.first, !id.isEmpty, id.allSatisfy(\.isNumber) {
             return EmbedInfo(embedHost: "player.vimeo.com", embedId: id,
                              iframeSrc: "https://player.vimeo.com/video/\(id)")
         }
 
         // PeerTube (heuristic across instances)
-        if segments.count == 2, segments[0] == "w" {
+        if segments.count == 2, segments[0] == "w", isLikelyPeerTubeID(segments[1]) {
             return EmbedInfo(embedHost: host, embedId: segments[1],
                              iframeSrc: "\(scheme)://\(host)/videos/embed/\(segments[1])")
         }
-        if segments.count == 3, segments[0] == "videos", segments[1] == "watch" || segments[1] == "embed" {
+        if segments.count == 3, segments[0] == "videos", segments[1] == "watch" || segments[1] == "embed",
+           isLikelyPeerTubeID(segments[2]) {
             return EmbedInfo(embedHost: host, embedId: segments[2],
                              iframeSrc: "\(scheme)://\(host)/videos/embed/\(segments[2])")
         }

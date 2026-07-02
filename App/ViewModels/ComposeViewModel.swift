@@ -52,6 +52,8 @@ final class ComposeViewModel: ObservableObject {
     @Published var successURL: URL?
     /// Set when the post was scheduled rather than published.
     @Published var scheduledConfirmation: Date?
+    /// True when the last success was a draft save (not a publish).
+    @Published var savedAsDraft = false
 
     /// A title routes the post to Articles; without one it's a note (→ the instance's Journal).
     var isArticle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -72,12 +74,22 @@ final class ComposeViewModel: ObservableObject {
         includeVideo && !videoURLString.trimmingCharacters(in: .whitespaces).isEmpty && videoEmbedInfo == nil
     }
 
-    var canPost: Bool {
+    /// Why posting is blocked (nil = good to go). Mirrors the server's rules:
+    /// `/api/compose` requires non-empty content; Micropub drafts accept content OR photos.
+    var blockedReason: String? {
         let hasBody = !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let scheduleOK = !isScheduling || scheduledDate > Date()
-        let videoOK = !includeVideo || videoEmbedInfo != nil
-        let hasAnything = hasBody || !attachments.isEmpty || !audioAttachments.isEmpty
-        return hasAnything && scheduleOK && videoOK && !isPosting && !isUploading
+        if isDraft {
+            if !hasBody && attachments.isEmpty { return "Drafts need text (or a photo)." }
+        } else {
+            if !hasBody { return "Posts need some text." }
+            if includeVideo && videoEmbedInfo == nil { return "Finish or remove the video URL." }
+            if isScheduling && scheduledDate <= Date() { return "Pick a schedule time in the future." }
+        }
+        return nil
+    }
+
+    var canPost: Bool {
+        blockedReason == nil && !isPosting && !isUploading
     }
 
     func addPhotos(urls: [URL], session: SessionStore) async {
@@ -87,7 +99,10 @@ final class ComposeViewModel: ObservableObject {
         for url in urls {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            guard let data = try? Data(contentsOf: url) else { continue }
+            guard let data = try? Data(contentsOf: url) else {
+                errorMessage = "Couldn't read \(url.lastPathComponent)."
+                continue
+            }
             do {
                 let upload = try await client.uploadMedia(data, filename: url.lastPathComponent,
                                                           mimeType: Self.mimeType(for: url))
@@ -111,7 +126,10 @@ final class ComposeViewModel: ObservableObject {
         for url in urls {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            guard let data = try? Data(contentsOf: url) else { continue }
+            guard let data = try? Data(contentsOf: url) else {
+                errorMessage = "Couldn't read \(url.lastPathComponent)."
+                continue
+            }
             do {
                 let upload = try await client.uploadMedia(data, filename: url.lastPathComponent,
                                                           mimeType: "audio/mpeg")
@@ -149,6 +167,7 @@ final class ComposeViewModel: ObservableObject {
                 )
                 successURL = url ?? session.resolvedBaseURL
                 scheduledConfirmation = nil
+                savedAsDraft = true
             } else {
                 var videos: [ComposeVideo] = []
                 if includeVideo, let info = videoEmbedInfo {
@@ -180,6 +199,7 @@ final class ComposeViewModel: ObservableObject {
                 )
                 successURL = result.post.webURL ?? session.resolvedBaseURL
                 scheduledConfirmation = result.isScheduled ? (result.post.scheduledFor ?? scheduledDate) : nil
+                savedAsDraft = false
             }
             reset()
         } catch APIError.unauthorized {
@@ -192,6 +212,7 @@ final class ComposeViewModel: ObservableObject {
     func startNew() {
         successURL = nil
         scheduledConfirmation = nil
+        savedAsDraft = false
         errorMessage = nil
     }
 

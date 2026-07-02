@@ -7,6 +7,19 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Fixed
+- **Compose correctness sweep** (from a verified multi-agent review): posting is now blocked with a
+  visible reason when the server would reject it (empty text, unfinished video URL, past schedule
+  time); a draft in progress **survives switching sidebar sections**; saving a draft says "Draft
+  saved" (not "Posted"); unreadable files and unsupported image types are surfaced instead of
+  silently skipped; filenames with quotes no longer corrupt uploads.
+- **Video-link detection tightened** — Wikipedia-style `/w/…` pages and lookalike domains
+  (`notvimeo.com`) are no longer treated as embeddable videos, in compose and in the feed.
+- **My Posts** — changing filters mid-scroll can't mix pages from the old filter anymore, and
+  delete/paging failures show a dismissible banner instead of failing silently.
+- **People/profiles** — follow/unfollow/block from a person's popover now refreshes the lists, and
+  an expired session during a profile load triggers reconnect instead of a wrong "Follow" state.
+
 ### Added
 - **Block list & unblock.** People gains a **Blocked** tab listing everyone you've blocked, with an
   **Unblock** button (confirmed; federates the Undo). After blocking from a profile card, the card
