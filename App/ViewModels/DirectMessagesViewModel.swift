@@ -39,16 +39,25 @@ final class DirectMessagesViewModel: ObservableObject {
         conversations.first { $0.key == key }
     }
 
+    /// Guards a stale in-flight load (the 20s poll) from clobbering a newer one
+    /// (reply / mark-read reload).
+    private var loadToken = 0
+
     func load(session: SessionStore) async {
         guard let client = session.client else { return }
+        loadToken &+= 1
+        let token = loadToken
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            conversations = Self.group(try await client.directMessages())
+            let grouped = Self.group(try await client.directMessages())
+            guard token == loadToken else { return } // superseded by a newer load
+            conversations = grouped
         } catch APIError.unauthorized {
             session.reportUnauthorized()
         } catch {
+            guard token == loadToken else { return }
             errorMessage = Self.message(for: error)
         }
     }

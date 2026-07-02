@@ -29,6 +29,7 @@ struct ComposeView: View {
             .padding(20)
             .frame(maxWidth: 640, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .top)
+            .disabled(model.isPosting) // don't let text typed mid-post get wiped by reset()
         }
         .navigationTitle("New Post")
         .toolbar {
