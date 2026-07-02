@@ -22,6 +22,8 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 - **Unreadable "Unfollow" button** on the profile card (dark-on-dark) — now a legible bordered button.
 
 ### Added
+- **Your profile ("Me").** Tap the account footer to open your own profile card — banner, avatar, bio,
+  and follower/following/post counts — with a button to open your instance in the browser.
 - **Menu-bar presence.** A status-bar item showing unread notification + message counts with quick
   actions (open, jump to a section, New Post, refresh, disconnect), plus native app-menu commands —
   **New Post (⌘N)**, a **Go** menu for the sections (⌘1–⌘5), and **Refresh (⌘R)**.

@@ -4,6 +4,7 @@ import FediHomeKit
 struct MainView: View {
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var navigator: Navigator
+    @State private var showingMe = false
 
     var body: some View {
         NavigationSplitView {
@@ -33,13 +34,20 @@ struct MainView: View {
 
     private var accountFooter: some View {
         HStack(spacing: 10) {
-            AsyncAvatar(url: session.account?.avatarURL, size: 32)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(session.account?.displayName ?? "—")
-                    .font(.callout).bold().lineLimit(1)
-                Text(session.account?.fediAddress ?? session.account?.handle ?? "")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            Button { showingMe = true } label: {
+                HStack(spacing: 10) {
+                    AsyncAvatar(url: session.account?.avatarURL, size: 32)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(session.account?.displayName ?? "—")
+                            .font(.callout).bold().lineLimit(1)
+                        Text(session.account?.fediAddress ?? session.account?.handle ?? "")
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .help("Your profile")
             Spacer()
             Menu {
                 Button("Disconnect", role: .destructive) { session.disconnect() }
@@ -52,5 +60,10 @@ struct MainView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.regularMaterial)
+        .sheet(isPresented: $showingMe) {
+            if let account = session.account {
+                MeView(account: account, baseURL: session.resolvedBaseURL)
+            }
+        }
     }
 }
