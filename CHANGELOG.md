@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Direct messages.** A Messages section: conversation list grouped by conversation with unread
+  indicators, a thread view with message bubbles, an inline reply composer, mark-read on open, and
+  starting a new DM by `@handle`. Fediverse DMs; replying to Bluesky DMs isn't supported yet.
 - **People.** A People section with **Following / Followers** lists (from `/api/graph`, with counts);
   tap a fediverse person to open their profile card, and **follow someone** by entering
   `@name@server`. Discovery search is blocked on a FediHome endpoint (tracked in #6).

@@ -121,6 +121,32 @@ public actor FediHomeClient {
         try await admin(action: "block", ["actorUri": actorUri])
     }
 
+    // MARK: Direct messages (`dm` scope)
+
+    /// `GET /api/dms` — all direct messages + per-conversation read state.
+    public func directMessages() async throws -> DirectMessagesResponse {
+        try await get("/api/dms")
+    }
+
+    /// Send a fediverse DM. `reply` uses `dm_reply` (into an existing conversation, by
+    /// `recipientUri`); otherwise `dm_new_fedi` (by `recipientHandle`).
+    public func sendDM(content: String, recipientUri: String? = nil,
+                       recipientHandle: String? = nil, reply: Bool = false) async throws {
+        try await admin(action: reply ? "dm_reply" : "dm_new_fedi", [
+            "content": content,
+            "recipientUri": recipientUri,
+            "recipientHandle": recipientHandle,
+        ])
+    }
+
+    public func markDMRead(conversationKey: String) async throws {
+        try await admin(action: "mark_dm_read", ["conversationKey": conversationKey])
+    }
+
+    public func markAllDMsRead() async throws {
+        try await admin(action: "mark_all_dms_read", [:])
+    }
+
     // MARK: Compose (`create` / `media` scopes)
 
     /// `POST /api/media` — upload an image or audio file (multipart `file` field).
