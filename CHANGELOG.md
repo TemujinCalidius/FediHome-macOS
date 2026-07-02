@@ -7,6 +7,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Changed
+- **CI** — a GitHub Actions workflow builds the app and runs the FediHomeKit package tests on every
+  PR to (and push to) `dev`/`main` (XcodeGen-generated project, Xcode 16 / Swift 6).
+
 ### Fixed
 - **Clicking a notification no longer errors (-50)** — relative target paths (e.g. `/post/slug`) are
   resolved against the instance URL before opening.
