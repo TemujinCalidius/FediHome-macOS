@@ -162,15 +162,45 @@ public actor FediHomeClient {
     }
 
     /// `POST /api/micropub` — create a note (no title → the instance's Journal) or an
-    /// article (title provided). Attaches already-uploaded `photoURLs`. Returns the new
-    /// post's URL (from the 201 `Location` header), when present.
+    /// article (title provided). Attaches already-uploaded `photoURLs`; `summary` becomes
+    /// the article excerpt. Returns the new post's URL (from the 201 `Location` header).
+    /// Kept for **drafts** (`/api/compose` has no draft flag) and Micropub compatibility.
     @discardableResult
-    public func createPost(content: String, title: String? = nil,
+    public func createPost(content: String, title: String? = nil, summary: String? = nil,
                            photoURLs: [String] = [], draft: Bool = false) async throws -> URL? {
-        let body = Micropub.hEntry(content: content, title: title, photoURLs: photoURLs, draft: draft)
+        let body = Micropub.hEntry(content: content, title: title, summary: summary,
+                                   photoURLs: photoURLs, draft: draft)
         let request = try makePOST(path: "/api/micropub", body: body)
         let (_, response) = try await sendFull(request)
         return response.value(forHTTPHeaderField: "Location").flatMap(URL.init(string:))
+    }
+
+    /// `POST /api/compose` — FediHome's rich compose (`create` scope): article
+    /// description, photo captions + gallery flags, video embeds, audio, crossposting,
+    /// and **scheduling** (a future `scheduledFor` publishes server-side later).
+    public func composePost(
+        content: String,
+        title: String? = nil,
+        description: String? = nil,
+        photos: [ComposePhoto] = [],
+        videos: [ComposeVideo] = [],
+        audios: [ComposeAudio] = [],
+        addToPhotography: Bool = false, photoCategory: String? = nil,
+        addToVideos: Bool = false, videoCategory: String? = nil,
+        addToAudio: Bool = false, audioCategory: String? = nil,
+        crosspostBluesky: Bool = false, crosspostThreads: Bool = false,
+        scheduledFor: Date? = nil
+    ) async throws -> ComposeResult {
+        let body = ComposeBody.build(
+            content: content, title: title, description: description,
+            photos: photos, videos: videos, audios: audios,
+            addToPhotography: addToPhotography, photoCategory: photoCategory,
+            addToVideos: addToVideos, videoCategory: videoCategory,
+            addToAudio: addToAudio, audioCategory: audioCategory,
+            crosspostBluesky: crosspostBluesky, crosspostThreads: crosspostThreads,
+            scheduledFor: scheduledFor
+        )
+        return try await postJSON("/api/compose", body: body)
     }
 
     // MARK: Request plumbing

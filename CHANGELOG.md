@@ -7,6 +7,14 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Added
+- **Article descriptions & scheduled posts.** Composing now uses FediHome's rich compose API:
+  adding a title reveals a **Description** field (the article's excerpt, ~300 chars), a **Schedule
+  for later** toggle publishes the post server-side at the chosen time (it lives on your instance,
+  not in the app), and **Bluesky/Threads cross-posting** is now an explicit per-post toggle. Drafts
+  still save via Micropub and carry the description as their excerpt. (Closes the app side of #14
+  and #18; needs a FediHome instance on the current dev.)
+
 ### Changed
 - **CI** — a GitHub Actions workflow builds the app and runs the FediHomeKit package tests on every
   PR to (and push to) `dev`/`main` (XcodeGen-generated project, Xcode 16 / Swift 6).
