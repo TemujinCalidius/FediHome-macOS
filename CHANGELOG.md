@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **App icon.** The app finally has one — a blue rounded-square with the FediHome house (generated
+  placeholder; `scripts/generate-appicon.swift` regenerates it, and designed art can replace the
+  PNGs later).
 - **Settings window (⌘,).** Tune how often Notifications, Messages, and the menu-bar badge check
   for new items; set the timeline's default reply/boost filters; toggle remembering your last
   section on launch.
