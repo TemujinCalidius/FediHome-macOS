@@ -7,6 +7,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Added
+- **Edit your own replies.** In a thread, your replies now show a pencil — the reply bar switches
+  to edit mode (prefilled), and saving federates the update.
+
 ### Fixed
 - **Empty pages now start from the top** like every other page — loading, error, and empty states
   across Feed, Notifications, People, Messages, My Posts, and threads were vertically centered.

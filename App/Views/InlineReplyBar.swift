@@ -6,7 +6,10 @@ import FediHomeKit
 /// @-mention other thread participants. `onSend` returns success so the caller can
 /// clear + refresh.
 struct InlineReplyBar: View {
+    enum Mode { case reply, edit }
+
     let post: FediPost
+    var mode: Mode = .reply
     /// Other participants' handles (e.g. `@user@domain`) offered in the mention menu.
     var participants: [String] = []
     let onCancel: () -> Void
@@ -18,15 +21,23 @@ struct InlineReplyBar: View {
     @FocusState private var focused: Bool
 
     init(post: FediPost,
+         mode: Mode = .reply,
          participants: [String] = [],
          onCancel: @escaping () -> Void,
          onSend: @escaping (_ text: String, _ crosspostBluesky: Bool) async -> Bool) {
         self.post = post
+        self.mode = mode
         self.participants = participants
         self.onCancel = onCancel
         self.onSend = onSend
-        // Address the reply to the target; the server strips a duplicate leading handle.
-        _text = State(initialValue: post.replyMentionHandle + " ")
+        switch mode {
+        case .reply:
+            // Address the reply to the target; the server strips a duplicate leading handle.
+            _text = State(initialValue: post.replyMentionHandle + " ")
+        case .edit:
+            // Editing our own reply: start from its current text.
+            _text = State(initialValue: post.content)
+        }
     }
 
     private var canSend: Bool {
@@ -36,10 +47,10 @@ struct InlineReplyBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: "arrowshape.turn.up.left.fill").font(.caption2)
-                Text("Replying to \(post.authorName)").font(.caption)
+                Image(systemName: mode == .edit ? "pencil" : "arrowshape.turn.up.left.fill").font(.caption2)
+                Text(mode == .edit ? "Editing your reply" : "Replying to \(post.authorName)").font(.caption)
                 Spacer()
-                if !participants.isEmpty {
+                if mode == .reply, !participants.isEmpty {
                     Menu {
                         ForEach(participants, id: \.self) { handle in
                             Button(handle) { insertMention(handle) }
@@ -75,17 +86,20 @@ struct InlineReplyBar: View {
                     if isSending {
                         ProgressView().controlSize(.small)
                     } else {
-                        Image(systemName: "paperplane.fill")
+                        Image(systemName: mode == .edit ? "checkmark" : "paperplane.fill")
                     }
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canSend)
                 .keyboardShortcut(.return, modifiers: .command)
+                .help(mode == .edit ? "Save changes" : "Send reply")
             }
 
-            Toggle("Also post to Bluesky", isOn: $crosspostBluesky)
-                .font(.caption)
-                .toggleStyle(.checkbox)
+            if mode == .reply {
+                Toggle("Also post to Bluesky", isOn: $crosspostBluesky)
+                    .font(.caption)
+                    .toggleStyle(.checkbox)
+            }
         }
         .padding(10)
         .background(.regularMaterial)

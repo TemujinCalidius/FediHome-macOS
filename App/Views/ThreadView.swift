@@ -13,6 +13,7 @@ struct ThreadView: View {
     @StateObject private var imageViewer = ImageViewerModel()
     @Environment(\.dismiss) private var dismiss
     @State private var replyTarget: FediPost?
+    @State private var editTarget: FediPost?
 
     var body: some View {
         NavigationStack {
@@ -53,7 +54,22 @@ struct ThreadView: View {
 
     @ViewBuilder private var replyBar: some View {
         if !model.posts.isEmpty {
-            if let target = replyTarget {
+            if let target = editTarget {
+                InlineReplyBar(
+                    post: target,
+                    mode: .edit,
+                    onCancel: { editTarget = nil },
+                    onSend: { text, _ in
+                        let ok = await model.editReply(target, text: text, session: session)
+                        if ok {
+                            editTarget = nil
+                            await model.load(rootPost: rootPost, session: session) // show the edit
+                        }
+                        return ok
+                    }
+                )
+                .id("edit-\(target.id)")
+            } else if let target = replyTarget {
                 InlineReplyBar(
                     post: target,
                     participants: participants(excluding: target),
@@ -98,9 +114,10 @@ struct ThreadView: View {
         PostRowActions(
             onToggleLike: { Task { await model.toggleLike(post, session: session) } },
             onToggleBoost: { Task { await model.toggleBoost(post, session: session) } },
-            onReply: { replyTarget = post },
+            onReply: { editTarget = nil; replyTarget = post },
             onLoadCounts: { Task { await model.loadCounts(post, session: session) } },
-            onViewThread: nil
+            onViewThread: nil,
+            onEdit: post.isOutgoing ? { replyTarget = nil; editTarget = post } : nil
         )
     }
 
