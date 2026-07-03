@@ -25,7 +25,7 @@ struct DirectMessagesView: View {
             while !Task.isCancelled {
                 await model.load(session: session)
                 badge.setUnreadMessages(model.conversations.filter(\.unread).count)
-                try? await Task.sleep(for: .seconds(20))
+                try? await Task.sleep(for: .seconds(Prefs.dmPollSeconds))
             }
         }
         .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }

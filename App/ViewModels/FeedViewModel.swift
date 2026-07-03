@@ -9,9 +9,9 @@ final class FeedViewModel: ObservableObject, PostInteracting {
     @Published var errorMessage: String?
     @Published var actionError: String?
 
-    /// Timeline filters passed to `GET /api/feed`.
-    @Published var includeReplies = false
-    @Published var includeBoosts = true
+    /// Timeline filters passed to `GET /api/feed`, seeded from the Settings defaults.
+    @Published var includeReplies = Prefs.feedDefaultReplies
+    @Published var includeBoosts = Prefs.feedDefaultBoosts
 
     private var cursor: String?
     private var reachedEnd = false

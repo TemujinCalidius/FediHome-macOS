@@ -28,7 +28,7 @@ struct FediHomeApp: App {
                 .task(id: session.phase) {
                     while !Task.isCancelled, session.phase == .connected {
                         await badge.refresh(session: session)
-                        try? await Task.sleep(for: .seconds(60))
+                        try? await Task.sleep(for: .seconds(Prefs.badgePollSeconds))
                     }
                 }
         }
@@ -48,6 +48,10 @@ struct FediHomeApp: App {
                 Divider()
                 Button("Refresh") { navigator.refresh() }.keyboardShortcut("r", modifiers: .command)
             }
+        }
+
+        Settings {
+            SettingsView()
         }
 
         MenuBarExtra {
