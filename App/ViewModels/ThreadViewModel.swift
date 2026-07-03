@@ -32,7 +32,14 @@ final class ThreadViewModel: ObservableObject, PostInteracting {
         } catch APIError.unauthorized {
             session.reportUnauthorized()
         } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if posts.isEmpty {
+                errorMessage = message // initial load → full-pane error state
+            } else {
+                // Refresh after an edit/reply failed: the list still shows stale content,
+                // so surface it via the alert instead of failing silently.
+                actionError = "Couldn't refresh the thread — your change was sent, but the view may be out of date. (\(message))"
+            }
         }
     }
 }
