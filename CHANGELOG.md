@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Settings window (⌘,).** Tune how often Notifications, Messages, and the menu-bar badge check
+  for new items; set the timeline's default reply/boost filters; toggle remembering your last
+  section on launch.
 - **Reply to Bluesky DMs.** The message composer now works in Bluesky conversations too (routes via
   the instance's Bluesky bridge); the "isn't supported yet" notice is gone. Starting a *new* Bluesky
   conversation still happens on Bluesky itself for now.

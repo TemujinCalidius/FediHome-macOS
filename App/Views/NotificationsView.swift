@@ -49,7 +49,7 @@ struct NotificationsView: View {
                 while !Task.isCancelled {
                     await model.load(session: session)
                     badge.setNotificationCount(model.unreadCount)
-                    try? await Task.sleep(for: .seconds(30))
+                    try? await Task.sleep(for: .seconds(Prefs.notifPollSeconds))
                 }
             }
             .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }

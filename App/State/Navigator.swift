@@ -21,7 +21,7 @@ final class Navigator: ObservableObject {
 
     init() {
         let saved = UserDefaults.standard.string(forKey: Self.sectionKey)
-        section = saved.flatMap(AppSection.init(rawValue:)) ?? .feed
+        section = Prefs.rememberSection ? (saved.flatMap(AppSection.init(rawValue:)) ?? .feed) : .feed
     }
 
     func go(_ section: AppSection) { self.section = section }
