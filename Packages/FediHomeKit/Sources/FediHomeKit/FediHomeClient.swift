@@ -77,6 +77,12 @@ public actor FediHomeClient {
         try await admin(action: "unboost", ["postApId": postApId, "targetInbox": targetInbox])
     }
 
+    /// `edit_reply` action (`interact` scope) — updates one of our own replies by its
+    /// local `FediPost.id` and federates an AP Update.
+    public func editReply(replyId: String, content: String) async throws {
+        try await admin(action: "edit_reply", ["replyId": replyId, "content": content])
+    }
+
     /// `reply` action. `targetInbox`/`actorUri` help the server address the recipient;
     /// `mentionHandle` lets it de-duplicate a leading @mention.
     public func reply(

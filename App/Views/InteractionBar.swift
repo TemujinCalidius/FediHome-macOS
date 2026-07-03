@@ -9,6 +9,8 @@ struct PostRowActions {
     var onReply: () -> Void = {}
     var onLoadCounts: () -> Void = {}
     var onViewThread: (() -> Void)?
+    /// Present only on the owner's own posts/replies (thread view).
+    var onEdit: (() -> Void)?
 }
 
 /// The reply / boost / like / share row under a post, plus lazy count loading and a
@@ -26,6 +28,12 @@ struct InteractionBar: View {
             if let shareURL = post.shareURL {
                 ShareLink(item: shareURL) { Image(systemName: "square.and.arrow.up") }
                     .buttonStyle(.plain)
+            }
+
+            if let onEdit = actions.onEdit {
+                Button(action: onEdit) { Image(systemName: "pencil") }
+                    .buttonStyle(.plain)
+                    .help("Edit")
             }
 
             Spacer(minLength: 8)
