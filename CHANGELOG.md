@@ -8,6 +8,9 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Reply to Bluesky DMs.** The message composer now works in Bluesky conversations too (routes via
+  the instance's Bluesky bridge); the "isn't supported yet" notice is gone. Starting a *new* Bluesky
+  conversation still happens on Bluesky itself for now.
 - **Edit your own replies.** In a thread, your replies now show a pencil — the reply bar switches
   to edit mode (prefilled), and saving federates the update.
 

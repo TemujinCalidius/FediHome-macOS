@@ -62,11 +62,21 @@ final class DirectMessagesViewModel: ObservableObject {
         }
     }
 
-    /// Reply into an existing fediverse conversation.
+    /// Reply into an existing conversation — fediverse via `dm_reply`, Bluesky via
+    /// `bsky_dm_reply` (needs the thread's convoId).
     func reply(to conversation: DMConversation, text: String, session: SessionStore) async -> Bool {
-        guard let client = session.client, let uri = conversation.partnerUri else { return false }
+        guard let client = session.client else { return false }
         do {
-            try await client.sendDM(content: text, recipientUri: uri, reply: true)
+            if conversation.isFedi {
+                guard let uri = conversation.partnerUri else { return false }
+                try await client.sendDM(content: text, recipientUri: uri, reply: true)
+            } else {
+                guard let convoId = conversation.messages.compactMap(\.bskyConvoId).last else {
+                    actionError = "Can't reply — this Bluesky conversation has no conversation id yet. Pull to refresh and try again."
+                    return false
+                }
+                try await client.sendBskyDM(content: text, convoId: convoId)
+            }
             await load(session: session)
             return true
         } catch APIError.unauthorized {

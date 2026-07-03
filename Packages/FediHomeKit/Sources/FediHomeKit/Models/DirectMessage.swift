@@ -11,6 +11,8 @@ public struct DirectMessage: Codable, Sendable, Identifiable, Equatable {
     public let content: String
     public let contentHtml: String?
     public let apId: String?
+    /// Bluesky conversation id — required to reply in a bsky thread.
+    public let bskyConvoId: String?
     public let conversationKey: String   // "fedi:{actorUri}" | "bsky:{did}"
     public let isOutgoing: Bool
     public let deliveredAt: Date?

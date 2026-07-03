@@ -132,26 +132,21 @@ private struct DMThreadView: View {
         }
     }
 
-    @ViewBuilder private var composer: some View {
-        if conversation?.isFedi == false {
-            Text("Replying to Bluesky messages isn't supported yet.")
-                .font(.caption).foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity).padding(10).background(.regularMaterial)
-        } else {
-            HStack(alignment: .bottom, spacing: 8) {
-                TextField("Message…", text: $draft, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .lineLimit(1...5)
-                    .onSubmit(send)
-                Button(action: send) {
-                    if isSending { ProgressView().controlSize(.small) } else { Image(systemName: "paperplane.fill") }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+    private var composer: some View {
+        // Works for fediverse AND Bluesky threads (routing happens in the view model).
+        HStack(alignment: .bottom, spacing: 8) {
+            TextField("Message…", text: $draft, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...5)
+                .onSubmit(send)
+            Button(action: send) {
+                if isSending { ProgressView().controlSize(.small) } else { Image(systemName: "paperplane.fill") }
             }
-            .padding(10)
-            .background(.regularMaterial)
+            .buttonStyle(.borderedProminent)
+            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
         }
+        .padding(10)
+        .background(.regularMaterial)
     }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {

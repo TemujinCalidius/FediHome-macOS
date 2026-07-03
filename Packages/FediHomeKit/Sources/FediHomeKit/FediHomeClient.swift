@@ -166,6 +166,11 @@ public actor FediHomeClient {
         ])
     }
 
+    /// Reply in an existing **Bluesky** conversation (`bsky_dm_reply`, `dm` scope).
+    public func sendBskyDM(content: String, convoId: String) async throws {
+        try await admin(action: "bsky_dm_reply", ["content": content, "convoId": convoId])
+    }
+
     public func markDMRead(conversationKey: String) async throws {
         try await admin(action: "mark_dm_read", ["conversationKey": conversationKey])
     }
