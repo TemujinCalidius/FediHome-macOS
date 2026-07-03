@@ -21,6 +21,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   to edit mode (prefilled), and saving federates the update.
 
 ### Fixed
+- **Thread refresh failures are no longer silent** — if the reload after sending/editing a reply
+  fails, an alert explains the view may be stale (the change itself was sent).
+- **Icon generator is display-independent** — regenerating on a Retina Mac no longer produces
+  wrongly-sized PNGs (renders into exact-pixel bitmaps and self-checks dimensions).
 - **Empty pages now start from the top** like every other page — loading, error, and empty states
   across Feed, Notifications, People, Messages, My Posts, and threads were vertically centered.
 - **Images are cached** (memory + disk), so avatars and feed media stop re-downloading on every

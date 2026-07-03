@@ -22,11 +22,19 @@ let variants: [(String, Int, Int, Int)] = [
     ("icon_512.png", 512, 512, 1), ("icon_512@2x.png", 1024, 512, 2),
 ]
 
-func renderIcon(pixels: Int) -> NSImage {
+/// Renders into an explicitly sized bitmap — NOT lockFocus(), which rasterizes at the
+/// main display's backing scale and would write 2x-sized PNGs on any Retina Mac.
+func renderIcon(pixels: Int) -> NSBitmapImageRep? {
     let size = CGFloat(pixels)
-    let image = NSImage(size: NSSize(width: size, height: size))
-    image.lockFocus()
-    defer { image.unlockFocus() }
+    guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+                                     bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                     isPlanar: false, colorSpaceName: .calibratedRGB,
+                                     bytesPerRow: 0, bitsPerPixel: 0),
+          let context = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+    rep.size = NSSize(width: size, height: size) // 1 point = 1 pixel, display-independent
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = context
+    defer { NSGraphicsContext.restoreGraphicsState() }
 
     // Big Sur-style icons float in the canvas with a ~10% margin.
     let inset = size * 0.098
@@ -59,23 +67,17 @@ func renderIcon(pixels: Int) -> NSImage {
         tinted.draw(in: NSRect(origin: origin, size: glyphSize),
                     from: .zero, operation: .sourceOver, fraction: 1)
     }
-    return image
-}
-
-func pngData(_ image: NSImage, pixels: Int) -> Data? {
-    guard let tiff = image.tiffRepresentation,
-          let rep = NSBitmapImageRep(data: tiff) else { return nil }
-    rep.size = NSSize(width: pixels, height: pixels)
-    return rep.representation(using: .png, properties: [:])
+    return rep
 }
 
 try? FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 
 var images: [[String: String]] = []
 for (filename, pixels, points, scale) in variants {
-    let icon = renderIcon(pixels: pixels)
-    guard let data = pngData(icon, pixels: pixels) else {
-        fputs("failed to render \(filename)\n", stderr); exit(1)
+    guard let rep = renderIcon(pixels: pixels),
+          rep.pixelsWide == pixels, rep.pixelsHigh == pixels,
+          let data = rep.representation(using: .png, properties: [:]) else {
+        fputs("failed to render \(filename) at exactly \(pixels)px\n", stderr); exit(1)
     }
     try data.write(to: iconset.appendingPathComponent(filename))
     images.append(["size": "\(points)x\(points)", "idiom": "mac",
