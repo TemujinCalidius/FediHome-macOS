@@ -36,11 +36,13 @@ struct ThreadView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.posts.isEmpty {
-            ProgressView("Loading thread…").frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView("Loading thread…") }
         } else if let error = model.errorMessage, model.posts.isEmpty {
-            ContentUnavailableView("Couldn't load thread",
-                                   systemImage: "bubble.left.and.exclamationmark.bubble.right",
-                                   description: Text(error))
+            TopAlignedState {
+                ContentUnavailableView("Couldn't load thread",
+                                       systemImage: "bubble.left.and.exclamationmark.bubble.right",
+                                       description: Text(error))
+            }
         } else {
             List(model.posts) { post in
                 PostRowView(post: post, baseURL: baseURL, actions: actions(for: post))

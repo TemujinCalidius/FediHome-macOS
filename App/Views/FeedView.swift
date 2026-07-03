@@ -51,19 +51,22 @@ struct FeedView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.posts.isEmpty {
-            ProgressView("Loading your feed…")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView("Loading your feed…") }
         } else if let error = model.errorMessage, model.posts.isEmpty {
-            ContentUnavailableView {
-                Label("Couldn't load the feed", systemImage: "wifi.exclamationmark")
-            } description: {
-                Text(error)
-            } actions: {
-                Button("Retry") { Task { await model.loadFirst(session: session) } }
+            TopAlignedState {
+                ContentUnavailableView {
+                    Label("Couldn't load the feed", systemImage: "wifi.exclamationmark")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("Retry") { Task { await model.loadFirst(session: session) } }
+                }
             }
         } else if model.posts.isEmpty {
-            ContentUnavailableView("No posts yet", systemImage: "tray",
-                                   description: Text("Your timeline is empty."))
+            TopAlignedState {
+                ContentUnavailableView("No posts yet", systemImage: "tray",
+                                       description: Text("Your timeline is empty."))
+            }
         } else {
             list
         }

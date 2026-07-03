@@ -62,13 +62,17 @@ struct MyPostsView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.posts.isEmpty {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView() }
         } else if let error = model.errorMessage, model.posts.isEmpty {
-            ContentUnavailableView("Couldn't load your posts", systemImage: "tray",
-                                   description: Text(error))
+            TopAlignedState {
+                ContentUnavailableView("Couldn't load your posts", systemImage: "tray",
+                                       description: Text(error))
+            }
         } else if model.posts.isEmpty {
-            ContentUnavailableView("Nothing here", systemImage: "tray",
-                                   description: Text(model.statusFilter.emptyMessage))
+            TopAlignedState {
+                ContentUnavailableView("Nothing here", systemImage: "tray",
+                                       description: Text(model.statusFilter.emptyMessage))
+            }
         } else {
             VStack(spacing: 0) {
                 if let error = model.errorMessage {
