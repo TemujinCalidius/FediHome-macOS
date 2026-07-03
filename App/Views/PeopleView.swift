@@ -82,9 +82,11 @@ struct PeopleView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.graph == nil {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView() }
         } else if let error = model.errorMessage, model.graph == nil {
-            ContentUnavailableView("Couldn't load people", systemImage: "person.2.slash", description: Text(error))
+            TopAlignedState {
+                ContentUnavailableView("Couldn't load people", systemImage: "person.2.slash", description: Text(error))
+            }
         } else if tab == .blocked {
             blockedList
         } else {
@@ -95,8 +97,10 @@ struct PeopleView: View {
     @ViewBuilder private var followList: some View {
         let people = tab == .following ? (model.graph?.following ?? []) : (model.graph?.followers ?? [])
         if people.isEmpty {
-            ContentUnavailableView(tab == .following ? "Not following anyone yet" : "No followers yet",
-                                   systemImage: "person.2")
+            TopAlignedState {
+                ContentUnavailableView(tab == .following ? "Not following anyone yet" : "No followers yet",
+                                       systemImage: "person.2")
+            }
         } else {
             List(people) { person in
                 PersonRow(person: person, baseURL: session.resolvedBaseURL) {
@@ -111,8 +115,10 @@ struct PeopleView: View {
     @ViewBuilder private var blockedList: some View {
         let blocked = model.graph?.blockedPeople ?? []
         if blocked.isEmpty {
-            ContentUnavailableView("No blocked accounts", systemImage: "hand.raised",
-                                   description: Text("People you block appear here and can be unblocked."))
+            TopAlignedState {
+                ContentUnavailableView("No blocked accounts", systemImage: "hand.raised",
+                                       description: Text("People you block appear here and can be unblocked."))
+            }
         } else {
             List(blocked) { person in
                 BlockedRow(person: person, baseURL: session.resolvedBaseURL) {

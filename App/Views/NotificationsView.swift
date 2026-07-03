@@ -71,21 +71,26 @@ struct NotificationsView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.response == nil {
-            ProgressView("Loading…")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView("Loading…") }
         } else if let error = model.errorMessage, model.response == nil {
-            ContentUnavailableView {
-                Label("Couldn't load notifications", systemImage: "bell.slash")
-            } description: {
-                Text(error)
-            } actions: {
-                Button("Retry") { Task { await model.load(session: session) } }
+            TopAlignedState {
+                ContentUnavailableView {
+                    Label("Couldn't load notifications", systemImage: "bell.slash")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("Retry") { Task { await model.load(session: session) } }
+                }
             }
         } else if model.items.isEmpty {
-            ContentUnavailableView("No notifications", systemImage: "bell",
-                                   description: Text("You're all caught up."))
+            TopAlignedState {
+                ContentUnavailableView("No notifications", systemImage: "bell",
+                                       description: Text("You're all caught up."))
+            }
         } else if filteredItems.isEmpty {
-            ContentUnavailableView("No \(filter.label.lowercased())", systemImage: "line.3.horizontal.decrease.circle")
+            TopAlignedState {
+                ContentUnavailableView("No \(filter.label.lowercased())", systemImage: "line.3.horizontal.decrease.circle")
+            }
         } else {
             List(filteredItems) { item in
                 NotificationRow(item: item, baseURL: session.resolvedBaseURL, isUnread: unreadIDs.contains(item.id))

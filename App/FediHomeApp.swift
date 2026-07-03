@@ -2,6 +2,13 @@ import SwiftUI
 
 @main
 struct FediHomeApp: App {
+    init() {
+        // AsyncImage loads through URLSession.shared — give it a real cache so
+        // avatars and feed media stop re-downloading on every scroll/relaunch.
+        URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024,
+                                   diskCapacity: 512 * 1024 * 1024)
+    }
+
     @StateObject private var session = SessionStore()
     @StateObject private var imageViewer = ImageViewerModel()
     @StateObject private var navigator = Navigator()

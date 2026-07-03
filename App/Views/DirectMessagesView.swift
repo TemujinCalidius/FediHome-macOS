@@ -43,12 +43,16 @@ struct DirectMessagesView: View {
 
     @ViewBuilder private var content: some View {
         if model.isLoading && model.conversations.isEmpty {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            TopAlignedState { ProgressView() }
         } else if let error = model.errorMessage, model.conversations.isEmpty {
-            ContentUnavailableView("Couldn't load messages", systemImage: "exclamationmark.bubble", description: Text(error))
+            TopAlignedState {
+                ContentUnavailableView("Couldn't load messages", systemImage: "exclamationmark.bubble", description: Text(error))
+            }
         } else if model.conversations.isEmpty {
-            ContentUnavailableView("No messages", systemImage: "bubble.left.and.bubble.right",
-                                   description: Text("Start a conversation with the compose button."))
+            TopAlignedState {
+                ContentUnavailableView("No messages", systemImage: "bubble.left.and.bubble.right",
+                                       description: Text("Start a conversation with the compose button."))
+            }
         } else {
             List(model.conversations) { conversation in
                 NavigationLink {

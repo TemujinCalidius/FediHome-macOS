@@ -3,16 +3,26 @@ import FediHomeKit
 
 /// The app's sidebar sections — shared so menu commands and the menu-bar item can
 /// drive navigation, not just the sidebar.
-enum AppSection: Hashable, CaseIterable {
+enum AppSection: String, Hashable, CaseIterable {
     case feed, notifications, compose, people, messages, myPosts
 }
 
 /// App-level navigation state, shared across the window and the menu-bar scene.
+/// The selected section persists across launches.
 @MainActor
 final class Navigator: ObservableObject {
-    @Published var section: AppSection = .feed
+    private static let sectionKey = "lastSection"
+
+    @Published var section: AppSection {
+        didSet { UserDefaults.standard.set(section.rawValue, forKey: Self.sectionKey) }
+    }
     /// Bumped by the Refresh command; the visible section observes it and reloads.
     @Published private(set) var refreshTick = 0
+
+    init() {
+        let saved = UserDefaults.standard.string(forKey: Self.sectionKey)
+        section = saved.flatMap(AppSection.init(rawValue:)) ?? .feed
+    }
 
     func go(_ section: AppSection) { self.section = section }
     func refresh() { refreshTick += 1 }

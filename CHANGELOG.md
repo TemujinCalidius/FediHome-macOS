@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Fixed
+- **Empty pages now start from the top** like every other page — loading, error, and empty states
+  across Feed, Notifications, People, Messages, My Posts, and threads were vertically centered.
+- **Images are cached** (memory + disk), so avatars and feed media stop re-downloading on every
+  scroll and relaunch.
+- **The app remembers your last section** across launches instead of always opening on Feed.
 - **Compose correctness sweep** (from a verified multi-agent review): posting is now blocked with a
   visible reason when the server would reject it (empty text, unfinished video URL, past schedule
   time); a draft in progress **survives switching sidebar sections**; saving a draft says "Draft
