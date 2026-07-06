@@ -25,6 +25,7 @@ struct FediHomeApp: App {
                 .environmentObject(badge)
                 .overlay { ImageViewerOverlay().environmentObject(imageViewer) }
                 .frame(minWidth: 760, minHeight: 520)
+                .task { NotificationManager.shared.attach(navigator: navigator) }
                 .task(id: session.phase) {
                     while !Task.isCancelled, session.phase == .connected {
                         await badge.refresh(session: session)

@@ -11,6 +11,7 @@ enum Prefs {
     static let feedBoostsKey = "feedDefaultBoosts"
     static let rememberSectionKey = "rememberSection"
     static let showDockBadgeKey = "showDockBadge"
+    static let notifyBannersKey = "notifyBanners"
 
     /// Poll intervals are clamped so a corrupted default can't hammer the instance.
     static var notifPollSeconds: Int { max(10, intOr(30, notifPollKey)) }
@@ -21,6 +22,7 @@ enum Prefs {
     static var feedDefaultBoosts: Bool { boolOr(true, feedBoostsKey) }
     static var rememberSection: Bool { boolOr(true, rememberSectionKey) }
     static var showDockBadge: Bool { boolOr(true, showDockBadgeKey) }
+    static var notifyBanners: Bool { boolOr(true, notifyBannersKey) }
 
     private static func intOr(_ fallback: Int, _ key: String) -> Int {
         UserDefaults.standard.object(forKey: key) as? Int ?? fallback

@@ -8,6 +8,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Native notification banners.** New likes/boosts/replies/follows and incoming DMs pop a real
+  macOS banner while the app runs (window can be closed — the menu-bar poll is the engine);
+  clicking one jumps to the right section. First launch never replays history, and a Settings
+  toggle turns banners off without building up a backlog blast.
 - **Dock icon badge.** The Dock icon now shows the classic red unread bubble (notifications +
   messages combined), kept in sync with the menu-bar counts and clearing on mark-read/disconnect.
   Toggle it in Settings → General. (#38)
