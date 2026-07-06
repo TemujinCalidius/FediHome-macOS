@@ -30,14 +30,22 @@ struct NotificationsView: View {
                 }
                 .help("Filter")
                 Button {
-                    Task { await model.markAllRead(session: session); badge.setNotificationCount(0) }
+                    Task {
+                        await model.markAllRead(session: session)
+                        badge.setNotificationCount(0)
+                        badge.markNotificationsSeen(model.items, session: session) // read → never banner
+                    }
                 } label: {
                     Image(systemName: "checkmark.circle")
                 }
                 .disabled(model.unreadCount == 0)
                 .help("Mark all read")
                 Button {
-                    Task { await model.load(session: session) }
+                    Task {
+                        await model.load(session: session)
+                        badge.setNotificationCount(model.unreadCount)
+                        badge.markNotificationsSeen(model.items, session: session)
+                    }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -49,6 +57,8 @@ struct NotificationsView: View {
                 while !Task.isCancelled {
                     await model.load(session: session)
                     badge.setNotificationCount(model.unreadCount)
+                    // The user is looking at these — don't banner them from the slower badge poll.
+                    badge.markNotificationsSeen(model.items, session: session)
                     try? await Task.sleep(for: .seconds(Prefs.notifPollSeconds))
                 }
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 @main
 struct FediHomeApp: App {
@@ -7,6 +8,9 @@ struct FediHomeApp: App {
         // avatars and feed media stop re-downloading on every scroll/relaunch.
         URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024,
                                    diskCapacity: 512 * 1024 * 1024)
+        // Install the notification delegate at launch, so a banner click that
+        // *launches* the app still routes correctly.
+        MainActor.assumeIsolated { NotificationManager.shared.setupDelegate() }
     }
 
     @StateObject private var session = SessionStore()
@@ -25,13 +29,8 @@ struct FediHomeApp: App {
                 .environmentObject(badge)
                 .overlay { ImageViewerOverlay().environmentObject(imageViewer) }
                 .frame(minWidth: 760, minHeight: 520)
-                .task { NotificationManager.shared.attach(navigator: navigator) }
-                .task(id: session.phase) {
-                    while !Task.isCancelled, session.phase == .connected {
-                        await badge.refresh(session: session)
-                        try? await Task.sleep(for: .seconds(Prefs.badgePollSeconds))
-                    }
-                }
+                // NOTE: no polling here — the badge/banner poll lives on the menu-bar
+                // label below, which (unlike this window) survives the window closing.
         }
         .defaultSize(width: 980, height: 680)
         .commands {
@@ -59,10 +58,40 @@ struct FediHomeApp: App {
         MenuBarExtra {
             MenuBarContent(session: session, navigator: navigator, badge: badge)
         } label: {
+            MenuBarPollingLabel(session: session, navigator: navigator, badge: badge)
+        }
+    }
+}
+
+/// The status-bar label doubles as the app's polling engine: unlike the main window's
+/// content, it stays alive for the app's entire lifetime, so badges and banners keep
+/// working after the window is closed (the advertised menu-bar-app use case).
+private struct MenuBarPollingLabel: View {
+    @ObservedObject var session: SessionStore
+    let navigator: Navigator
+    @ObservedObject var badge: BadgeModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Group {
             if badge.total > 0 {
                 Label("\(badge.total)", systemImage: "house.fill")
             } else {
                 Image(systemName: "house")
+            }
+        }
+        .task(id: session.phase) {
+            NotificationManager.shared.attach(navigator: navigator) {
+                openWindow(id: "main") // reopen if closed — banner clicks must work
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            guard session.phase == .connected else {
+                badge.reset() // disconnect visibly clears Dock + menu-bar counts
+                return
+            }
+            while !Task.isCancelled, session.phase == .connected {
+                await badge.refresh(session: session)
+                try? await Task.sleep(for: .seconds(Prefs.badgePollSeconds))
             }
         }
     }
