@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.feedBoostsKey) private var feedBoosts = true
     @AppStorage(Prefs.rememberSectionKey) private var rememberSection = true
     @AppStorage(Prefs.showDockBadgeKey) private var showDockBadge = true
+    @AppStorage(Prefs.notifyBannersKey) private var notifyBanners = true
 
     var body: some View {
         Form {
@@ -33,6 +34,9 @@ struct SettingsView: View {
                 Toggle("Remember my last section on launch", isOn: $rememberSection)
                 Toggle("Show unread badge on Dock icon", isOn: $showDockBadge)
                     .onChange(of: showDockBadge) { badge.redrawDockBadge() } // apply immediately
+                Toggle("Show notification banners for new activity", isOn: $notifyBanners)
+                Text("Banners appear while the app is running (the window can be closed).")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
