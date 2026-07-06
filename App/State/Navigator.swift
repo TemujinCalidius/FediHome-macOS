@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import FediHomeKit
 
 /// The app's sidebar sections — shared so menu commands and the menu-bar item can
@@ -37,16 +38,25 @@ final class BadgeModel: ObservableObject {
     var total: Int { notificationCount + unreadMessages }
 
     /// Let the visible section keep the badge in sync without an extra round-trip.
-    func setNotificationCount(_ value: Int) { notificationCount = value }
-    func setUnreadMessages(_ value: Int) { unreadMessages = value }
+    func setNotificationCount(_ value: Int) { notificationCount = value; redrawDockBadge() }
+    func setUnreadMessages(_ value: Int) { unreadMessages = value; redrawDockBadge() }
 
     func refresh(session: SessionStore) async {
         guard let client = session.client else {
-            notificationCount = 0; unreadMessages = 0; return
+            notificationCount = 0; unreadMessages = 0
+            redrawDockBadge()
+            return
         }
         if let notifs = try? await client.notifications() { notificationCount = notifs.count }
         if let dms = try? await client.directMessages() {
             unreadMessages = DirectMessagesViewModel.group(dms).filter(\.unread).count
         }
+        redrawDockBadge()
+    }
+
+    /// Mirrors the unread total onto the Dock icon (the classic red count bubble).
+    /// Also called when the Settings toggle flips, so it applies immediately.
+    func redrawDockBadge() {
+        NSApp.dockTile.badgeLabel = (Prefs.showDockBadge && total > 0) ? String(total) : nil
     }
 }
