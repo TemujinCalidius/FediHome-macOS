@@ -11,8 +11,6 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 - **Dock icon badge.** The Dock icon now shows the classic red unread bubble (notifications +
   messages combined), kept in sync with the menu-bar counts and clearing on mark-read/disconnect.
   Toggle it in Settings → General. (#38)
-
-### Added
 - **App icon.** The app finally has one — a blue rounded-square with the FediHome house (generated
   placeholder; `scripts/generate-appicon.swift` regenerates it, and designed art can replace the
   PNGs later).
