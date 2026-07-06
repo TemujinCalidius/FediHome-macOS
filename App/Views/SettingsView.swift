@@ -2,12 +2,15 @@ import SwiftUI
 
 /// The macOS Settings window (⌘,).
 struct SettingsView: View {
+    @EnvironmentObject private var badge: BadgeModel
+
     @AppStorage(Prefs.notifPollKey) private var notifPoll = 30
     @AppStorage(Prefs.dmPollKey) private var dmPoll = 20
     @AppStorage(Prefs.badgePollKey) private var badgePoll = 60
     @AppStorage(Prefs.feedRepliesKey) private var feedReplies = false
     @AppStorage(Prefs.feedBoostsKey) private var feedBoosts = true
     @AppStorage(Prefs.rememberSectionKey) private var rememberSection = true
+    @AppStorage(Prefs.showDockBadgeKey) private var showDockBadge = true
 
     var body: some View {
         Form {
@@ -28,6 +31,8 @@ struct SettingsView: View {
 
             Section("General") {
                 Toggle("Remember my last section on launch", isOn: $rememberSection)
+                Toggle("Show unread badge on Dock icon", isOn: $showDockBadge)
+                    .onChange(of: showDockBadge) { badge.redrawDockBadge() } // apply immediately
             }
         }
         .formStyle(.grouped)

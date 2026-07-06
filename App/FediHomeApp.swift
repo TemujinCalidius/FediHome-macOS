@@ -52,6 +52,7 @@ struct FediHomeApp: App {
 
         Settings {
             SettingsView()
+                .environmentObject(badge) // the Dock-badge toggle applies immediately
         }
 
         MenuBarExtra {
