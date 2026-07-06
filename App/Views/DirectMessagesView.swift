@@ -24,9 +24,14 @@ struct DirectMessagesView: View {
             // Poll while the Messages section is open so incoming DMs appear without a manual refresh.
             while !Task.isCancelled {
                 await model.load(session: session)
-                badge.setUnreadMessages(model.conversations.filter(\.unread).count)
                 try? await Task.sleep(for: .seconds(Prefs.dmPollSeconds))
             }
+        }
+        .onChange(of: model.conversations) {
+            // Fires on every reload (poll, thread mark-read, reply) → badge stays
+            // current immediately, and visible messages never banner later.
+            badge.setUnreadMessages(model.conversations.filter(\.unread).count)
+            badge.markDMsSeen(model.conversations.flatMap(\.messages), session: session)
         }
         .onChange(of: navigator.refreshTick) { Task { await model.load(session: session) } }
         .sheet(isPresented: $showingNew) {

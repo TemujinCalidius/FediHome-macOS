@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.rememberSectionKey) private var rememberSection = true
     @AppStorage(Prefs.showDockBadgeKey) private var showDockBadge = true
     @AppStorage(Prefs.notifyBannersKey) private var notifyBanners = true
+    @State private var bannersDenied = false
 
     var body: some View {
         Form {
@@ -35,13 +36,20 @@ struct SettingsView: View {
                 Toggle("Show unread badge on Dock icon", isOn: $showDockBadge)
                     .onChange(of: showDockBadge) { badge.redrawDockBadge() } // apply immediately
                 Toggle("Show notification banners for new activity", isOn: $notifyBanners)
-                Text("Banners appear while the app is running (the window can be closed).")
-                    .font(.caption).foregroundStyle(.secondary)
+                if notifyBanners && bannersDenied {
+                    Label("Notifications are denied for FediHome — enable them in System Settings → Notifications.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.caption).foregroundStyle(.orange)
+                } else {
+                    Text("Banners appear while the app is running (the window can be closed).")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
         .frame(width: 440)
         .fixedSize()
+        .task { bannersDenied = await NotificationManager.shared.authorizationDenied() }
     }
 
     private func intervalPicker(_ label: String, selection: Binding<Int>, options: [Int]) -> some View {

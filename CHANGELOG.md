@@ -8,6 +8,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Badge & banner hardening** (from a verified multi-agent review): polling now lives in the
+  menu-bar item, so badges and banners genuinely keep working with the window closed; clicking a
+  banner reopens the window; one DM no longer banners twice; dedupe is ID-based and per-instance
+  (late-arriving federated items still announce, switching accounts neither replays nor swallows);
+  items you're already viewing or have marked read never banner; disconnect clears the badges; and
+  Settings warns when macOS notification permission is denied.
 - **Native notification banners.** New likes/boosts/replies/follows and incoming DMs pop a real
   macOS banner while the app runs (window can be closed — the menu-bar poll is the engine);
   clicking one jumps to the right section. First launch never replays history, and a Settings
