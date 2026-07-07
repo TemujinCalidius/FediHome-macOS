@@ -6,6 +6,7 @@ import FediHomeKit
 struct MyPostsView: View {
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var navigator: Navigator
+    @EnvironmentObject private var composeModel: ComposeViewModel
     @StateObject private var model = MyPostsViewModel()
     @State private var pendingDelete: OwnPost?
 
@@ -88,13 +89,24 @@ struct MyPostsView: View {
                     .background(.red.opacity(0.08))
                 }
                 List(model.posts) { post in
-                    MyPostRow(post: post, baseURL: session.resolvedBaseURL) {
-                        pendingDelete = post
-                    }
+                    MyPostRow(post: post, baseURL: session.resolvedBaseURL,
+                              onEdit: { beginEdit(post) },
+                              onDelete: { pendingDelete = post })
                     .task { await model.loadMoreIfNeeded(current: post, session: session) }
                 }
                 .listStyle(.inset)
                 .refreshable { await model.load(session: session) }
+            }
+        }
+    }
+
+    /// Prefill the composer with this post's source and switch to it in edit mode.
+    private func beginEdit(_ post: OwnPost) {
+        Task {
+            if await composeModel.beginEditing(post, session: session) {
+                navigator.go(.compose)
+            } else if let error = composeModel.errorMessage {
+                model.errorMessage = error // surface in this view's banner
             }
         }
     }
@@ -111,6 +123,7 @@ struct MyPostsView: View {
 private struct MyPostRow: View {
     let post: OwnPost
     let baseURL: URL
+    let onEdit: () -> Void
     let onDelete: () -> Void
 
     @Environment(\.openURL) private var openURL
@@ -147,6 +160,9 @@ private struct MyPostRow: View {
             Spacer()
 
             Menu {
+                if post.serverId != nil {
+                    Button("Edit…", action: onEdit)
+                }
                 if post.status == .published, let url = post.webURL(relativeTo: baseURL) {
                     Button("Open in browser") { openURL(url) }
                 }

@@ -27,7 +27,7 @@ struct MainView: View {
             case .compose: ComposeView(model: composeModel)
             case .people: PeopleView()
             case .messages: DirectMessagesView()
-            case .myPosts: MyPostsView()
+            case .myPosts: MyPostsView().environmentObject(composeModel) // My Posts → Edit
             }
         }
     }

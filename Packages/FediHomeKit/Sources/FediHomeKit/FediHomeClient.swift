@@ -238,7 +238,8 @@ public actor FediHomeClient {
         addToVideos: Bool = false, videoCategory: String? = nil,
         addToAudio: Bool = false, audioCategory: String? = nil,
         crosspostBluesky: Bool = false, crosspostThreads: Bool = false,
-        scheduledFor: Date? = nil
+        scheduledFor: Date? = nil,
+        editingPostId: String? = nil
     ) async throws -> ComposeResult {
         let body = ComposeBody.build(
             content: content, title: title, description: description,
@@ -247,9 +248,18 @@ public actor FediHomeClient {
             addToVideos: addToVideos, videoCategory: videoCategory,
             addToAudio: addToAudio, audioCategory: audioCategory,
             crosspostBluesky: crosspostBluesky, crosspostThreads: crosspostThreads,
-            scheduledFor: scheduledFor
+            scheduledFor: scheduledFor, editingPostId: editingPostId
         )
         return try await postJSON("/api/compose", body: body)
+    }
+
+    /// `GET /api/micropub?q=source&url=` — a post's editable source, for prefilling
+    /// the composer in edit mode.
+    public func postSource(url: String) async throws -> PostSource {
+        try await get("/api/micropub", query: [
+            URLQueryItem(name: "q", value: "source"),
+            URLQueryItem(name: "url", value: url),
+        ])
     }
 
     // MARK: Request plumbing

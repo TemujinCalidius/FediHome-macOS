@@ -22,10 +22,12 @@ public enum ComposeBody {
         audioCategory: String? = nil,
         crosspostBluesky: Bool = false,
         crosspostThreads: Bool = false,
-        scheduledFor: Date? = nil
+        scheduledFor: Date? = nil,
+        editingPostId: String? = nil
     ) -> [String: Any] {
         var body: [String: Any] = [:]
         body["content"] = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let editingPostId { body["editingPostId"] = editingPostId }
 
         if let title = trimmedNonEmpty(title) { body["title"] = title }
         if let description = trimmedNonEmpty(description) { body["description"] = description }

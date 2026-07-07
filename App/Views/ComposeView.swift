@@ -29,8 +29,13 @@ struct ComposeView: View {
                 if model.includeVideo && !model.isDraft { videoSection }
                 if !model.audioAttachments.isEmpty && !model.isDraft { audioSection }
 
-                controls
-                publishingOptions
+                if model.isEditing {
+                    Label("Attached media is kept as-is when editing.", systemImage: "paperclip")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    controls
+                    publishingOptions
+                }
 
                 if let reason = model.blockedReason, hasAnyInput {
                     Label(reason, systemImage: "info.circle")
@@ -44,20 +49,25 @@ struct ComposeView: View {
             .frame(maxWidth: .infinity, alignment: .top)
             .disabled(model.isPosting) // don't let text typed mid-post get wiped by reset()
         }
-        .navigationTitle("New Post")
+        .navigationTitle(model.isEditing ? "Edit Post" : "New Post")
         .toolbar {
+            if model.isEditing {
+                Button("Cancel") { model.cancelEditing() }
+            }
             Button {
                 Task { await model.post(session: session) }
             } label: {
                 if model.isPosting {
                     ProgressView().controlSize(.small)
                 } else {
-                    Text(model.isDraft ? "Save Draft" : (model.isScheduling ? "Schedule" : "Post"))
+                    Text(model.isEditing ? "Save Changes"
+                         : (model.isDraft ? "Save Draft" : (model.isScheduling ? "Schedule" : "Post")))
                 }
             }
             .disabled(!model.canPost)
             .keyboardShortcut(.return, modifiers: .command)
-            .help(model.isScheduling ? "Schedule for later" : "Publish")
+            .help(model.isEditing ? "Save the edit (federates an update)"
+                  : (model.isScheduling ? "Schedule for later" : "Publish"))
         }
         .fileImporter(isPresented: $showingImporter,
                       // Only types /api/media accepts (an unmapped image would 400).
@@ -81,6 +91,14 @@ struct ComposeView: View {
 
     private var typeBadge: some View {
         HStack(spacing: 8) {
+            if model.isEditing {
+                Label("Editing: \(model.editingDisplayTitle)", systemImage: "pencil")
+                    .font(.caption.bold())
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(.orange.opacity(0.15), in: Capsule())
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+            }
             Label(model.isArticle ? "Article" : "Journal note",
                   systemImage: model.isArticle ? "doc.richtext" : "text.quote")
                 .font(.caption.bold())
@@ -343,6 +361,9 @@ struct ComposeView: View {
                 .foregroundStyle(.green)
             if let when = model.scheduledConfirmation {
                 Text("Scheduled for \(when.formatted(date: .abbreviated, time: .shortened)).")
+            } else if model.savedEdit {
+                Text("Changes saved.")
+                Link("View post", destination: url)
             } else if model.savedAsDraft {
                 Text("Draft saved.")
                 Link("Open", destination: url)
