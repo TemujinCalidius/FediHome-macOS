@@ -91,6 +91,19 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    /// Re-fetches the account (e.g. after editing the profile) so the UI reflects
+    /// the new avatar/name/bio everywhere.
+    func refreshAccount() async {
+        guard let client else { return }
+        do {
+            account = try await client.account()
+        } catch APIError.unauthorized {
+            reportUnauthorized()
+        } catch {
+            // Transient — keep showing the last-known account.
+        }
+    }
+
     /// Called by view models when a read call returns 401.
     func reportUnauthorized() {
         guard phase == .connected else { return }
