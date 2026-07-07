@@ -8,6 +8,11 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Edit your own posts.** My Posts rows gain **Edit…** — the composer opens prefilled (title,
+  text, description) in edit mode and saving federates an update. Attached media is kept as-is
+  (text-only edits can't touch it). Needs a FediHome instance on the current dev (#31).
+
+### Added
 - **Badge & banner hardening** (from a verified multi-agent review): polling now lives in the
   menu-bar item, so badges and banners genuinely keep working with the window closed; clicking a
   banner reopens the window; one DM no longer banners twice; dedupe is ID-based and per-instance

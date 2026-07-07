@@ -35,8 +35,17 @@ public struct OwnPost: Codable, Sendable, Identifiable, Equatable {
     public let scheduledFor: Date?
     public let counts: Counts
     public let media: MediaSummary
+    /// The database id `/api/compose editingPostId` needs (FediHome#202). Optional so
+    /// older instances that don't send it still decode — editing is gated on it.
+    public let serverId: String?
 
     public var id: String { slug }
+
+    enum CodingKeys: String, CodingKey {
+        case slug, url, title, excerpt, category, type, status, published
+        case publishedAt, updatedAt, scheduledFor, counts, media
+        case serverId = "id"
+    }
 
     /// Display title: the title, else a trimmed excerpt, else a placeholder.
     public var displayTitle: String {

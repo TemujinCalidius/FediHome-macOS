@@ -54,6 +54,14 @@ final class ComposeViewModel: ObservableObject {
     @Published var scheduledConfirmation: Date?
     /// True when the last success was a draft save (not a publish).
     @Published var savedAsDraft = false
+    /// True when the last success was an edit (not a new post).
+    @Published var savedEdit = false
+
+    // Edit mode (My Posts → Edit): text/title/description only — media stays
+    // untouched (q=source carries no media, and /api/compose edits are opt-in).
+    @Published private(set) var editingPostId: String?
+    @Published private(set) var editingDisplayTitle = ""
+    var isEditing: Bool { editingPostId != nil }
 
     /// A title routes the post to Articles; without one it's a note (→ the instance's Journal).
     var isArticle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -78,7 +86,9 @@ final class ComposeViewModel: ObservableObject {
     /// `/api/compose` requires non-empty content; Micropub drafts accept content OR photos.
     var blockedReason: String? {
         let hasBody = !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        if isDraft {
+        if isEditing {
+            if !hasBody { return "Posts need some text." }
+        } else if isDraft {
             if !hasBody && attachments.isEmpty { return "Drafts need text (or a photo)." }
         } else {
             if !hasBody { return "Posts need some text." }
@@ -150,12 +160,59 @@ final class ComposeViewModel: ObservableObject {
         audioAttachments.removeAll { $0.id == audio.id }
     }
 
+    /// Loads a post's source into the composer for editing. Returns false (with an
+    /// error set) when the post can't be edited.
+    func beginEditing(_ post: OwnPost, session: SessionStore) async -> Bool {
+        guard let client = session.client else { return false }
+        guard let serverId = post.serverId else {
+            errorMessage = "This post can't be edited — your instance needs the latest FediHome."
+            return false
+        }
+        let webURL = post.webURL(relativeTo: session.resolvedBaseURL)?.absoluteString ?? post.url
+        do {
+            let source = try await client.postSource(url: webURL)
+            reset()
+            startNew()
+            content = source.content
+            title = source.title ?? ""
+            postDescription = source.summary ?? ""
+            editingPostId = serverId
+            editingDisplayTitle = post.displayTitle
+            return true
+        } catch APIError.unauthorized {
+            session.reportUnauthorized(); return false
+        } catch {
+            errorMessage = Self.message(for: error)
+            return false
+        }
+    }
+
+    func cancelEditing() {
+        reset()
+        startNew()
+    }
+
     func post(session: SessionStore) async {
         guard let client = session.client, canPost else { return }
         isPosting = true
         errorMessage = nil
         defer { isPosting = false }
         do {
+            if let editingPostId {
+                let result = try await client.composePost(
+                    content: content,
+                    title: isArticle ? title : nil,
+                    description: isArticle ? postDescription : nil,
+                    editingPostId: editingPostId
+                    // media omitted on purpose → the server keeps it untouched
+                )
+                successURL = result.post.webURL ?? session.resolvedBaseURL
+                scheduledConfirmation = nil
+                savedAsDraft = false
+                savedEdit = true
+                reset()
+                return
+            }
             if isDraft {
                 // /api/compose has no draft flag — drafts go via Micropub (with summary).
                 let url = try await client.createPost(
@@ -168,6 +225,7 @@ final class ComposeViewModel: ObservableObject {
                 successURL = url ?? session.resolvedBaseURL
                 scheduledConfirmation = nil
                 savedAsDraft = true
+                savedEdit = false
             } else {
                 var videos: [ComposeVideo] = []
                 if includeVideo, let info = videoEmbedInfo {
@@ -200,6 +258,7 @@ final class ComposeViewModel: ObservableObject {
                 successURL = result.post.webURL ?? session.resolvedBaseURL
                 scheduledConfirmation = result.isScheduled ? (result.post.scheduledFor ?? scheduledDate) : nil
                 savedAsDraft = false
+                savedEdit = false
             }
             reset()
         } catch APIError.unauthorized {
@@ -213,6 +272,7 @@ final class ComposeViewModel: ObservableObject {
         successURL = nil
         scheduledConfirmation = nil
         savedAsDraft = false
+        savedEdit = false
         errorMessage = nil
     }
 
@@ -234,6 +294,8 @@ final class ComposeViewModel: ObservableObject {
         audioAttachments = []
         addAudioToGallery = false
         audioCategory = ""
+        editingPostId = nil
+        editingDisplayTitle = ""
     }
 
     private static func mimeType(for url: URL) -> String {

@@ -5,7 +5,8 @@ final class OwnPostsTests: XCTestCase {
     func testPageDecodesAllStatuses() throws {
         let json = Data("""
         { "posts": [
-            { "slug": "my-article", "url": "/post/my-article", "title": "My Article",
+            { "id": "ckx-article-1",
+              "slug": "my-article", "url": "/post/my-article", "title": "My Article",
               "excerpt": "A summary", "category": "article", "type": "article",
               "status": "published", "published": true,
               "publishedAt": "2026-07-01T10:00:00.000Z", "updatedAt": "2026-07-01T10:05:00.000Z",
@@ -46,5 +47,32 @@ final class OwnPostsTests: XCTestCase {
 
         XCTAssertEqual(page.posts[2].status, .draft)
         XCTAssertEqual(page.posts[2].type, "photo")
+
+        // id → serverId (edit gate); rows without it (older servers) still decode.
+        XCTAssertEqual(article.serverId, "ckx-article-1")
+        XCTAssertNil(page.posts[1].serverId)
+        XCTAssertEqual(article.id, "my-article") // Identifiable stays slug-based
+    }
+
+    func testPostSourceDecodes() throws {
+        let json = Data("""
+        { "type": ["h-entry"], "properties": {
+            "name": ["My Article"], "content": ["Full **markdown** body"],
+            "summary": ["A short excerpt"], "published": ["2026-07-01T10:00:00.000Z"],
+            "category": ["swift"], "post-status": ["published"] } }
+        """.utf8)
+        let source = try JSONDecoder.fediHome.decode(PostSource.self, from: json)
+        XCTAssertEqual(source.title, "My Article")
+        XCTAssertEqual(source.content, "Full **markdown** body")
+        XCTAssertEqual(source.summary, "A short excerpt")
+        XCTAssertFalse(source.isDraft)
+    }
+
+    func testComposeBodyCarriesEditingPostId() throws {
+        let body = ComposeBody.build(content: "edited text", title: "T", editingPostId: "ckx1")
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(parsed["editingPostId"] as? String, "ckx1")
+        XCTAssertNil(parsed["photos"]) // omitted media → server preserves it
     }
 }
