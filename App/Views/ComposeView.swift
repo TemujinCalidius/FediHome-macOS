@@ -15,7 +15,9 @@ struct ComposeView: View {
             VStack(alignment: .leading, spacing: 14) {
                 typeBadge
 
-                TextField("Title (optional — adding one makes it an Article)", text: $model.title)
+                TextField(model.isEditing ? "Title"
+                          : "Title (optional — adding one makes it an Article)",
+                          text: $model.title)
                     .textFieldStyle(.plain)
                     .font(.title3.bold())
 
@@ -37,7 +39,7 @@ struct ComposeView: View {
                     publishingOptions
                 }
 
-                if let reason = model.blockedReason, hasAnyInput {
+                if let reason = model.blockedReason, hasAnyInput || model.isEditing {
                     Label(reason, systemImage: "info.circle")
                         .font(.caption).foregroundStyle(.orange)
                 }
@@ -99,12 +101,16 @@ struct ComposeView: View {
                     .foregroundStyle(.orange)
                     .lineLimit(1)
             }
-            Label(model.isArticle ? "Article" : "Journal note",
-                  systemImage: model.isArticle ? "doc.richtext" : "text.quote")
-                .font(.caption.bold())
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(.tint.opacity(0.15), in: Capsule())
-                .foregroundStyle(.tint)
+            // In edit mode the type is fixed (the "Editing:" badge stands in); showing a
+            // live note/article label here would imply clearing the title converts the post.
+            if !model.isEditing {
+                Label(model.isArticle ? "Article" : "Journal note",
+                      systemImage: model.isArticle ? "doc.richtext" : "text.quote")
+                    .font(.caption.bold())
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(.tint.opacity(0.15), in: Capsule())
+                    .foregroundStyle(.tint)
+            }
             Spacer()
             Text("\(model.characterCount)")
                 .font(.caption.monospacedDigit())

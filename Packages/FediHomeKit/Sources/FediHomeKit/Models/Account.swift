@@ -34,4 +34,14 @@ public struct Account: Codable, Sendable, Equatable {
         if let name, !name.isEmpty { return name }
         return handle
     }
+
+    /// Returns a copy with the profile fields replaced by an `update_profile` response,
+    /// so the UI reflects exactly what the server stored (incl. a value the server
+    /// reverted to its site default) even before the next `/api/account` fetch.
+    public func applying(_ profile: ProfileUpdateResult.Profile) -> Account {
+        Account(me: me, actor: actor, handle: handle, domain: domain, fediAddress: fediAddress,
+                name: name, authorName: profile.authorName, summary: profile.summary,
+                bio: profile.bio, tagline: profile.tagline, accentColor: profile.accentColor,
+                avatar: profile.avatar, banner: profile.banner, counts: counts)
+    }
 }

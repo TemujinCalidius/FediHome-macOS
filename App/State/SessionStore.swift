@@ -91,6 +91,12 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    /// Applies an `update_profile` response to the current account in place, so the UI
+    /// reflects exactly what the server stored without waiting on (or depending on) a refetch.
+    func applyProfile(_ profile: ProfileUpdateResult.Profile) {
+        account = account?.applying(profile)
+    }
+
     /// Re-fetches the account (e.g. after editing the profile) so the UI reflects
     /// the new avatar/name/bio everywhere.
     func refreshAccount() async {

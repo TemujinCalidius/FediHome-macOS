@@ -61,7 +61,19 @@ final class ComposeViewModel: ObservableObject {
     // untouched (q=source carries no media, and /api/compose edits are opt-in).
     @Published private(set) var editingPostId: String?
     @Published private(set) var editingDisplayTitle = ""
+    /// The post being edited started as an article — clearing its title mid-edit is
+    /// blocked (the server would keep it an article but null the title and excerpt).
+    @Published private(set) var editingWasArticle = false
     var isEditing: Bool { editingPostId != nil }
+
+    /// True when the composer holds an unsaved NEW post (not an edit) — used to warn
+    /// before an Edit… would replace it.
+    var hasUnsentInput: Bool {
+        guard !isEditing else { return false }
+        return !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !attachments.isEmpty || !audioAttachments.isEmpty || includeVideo
+    }
 
     /// A title routes the post to Articles; without one it's a note (→ the instance's Journal).
     var isArticle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -88,6 +100,9 @@ final class ComposeViewModel: ObservableObject {
         let hasBody = !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if isEditing {
             if !hasBody { return "Posts need some text." }
+            if editingWasArticle && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return "Keep a title — this is an article."
+            }
         } else if isDraft {
             if !hasBody && attachments.isEmpty { return "Drafts need text (or a photo)." }
         } else {
@@ -178,6 +193,7 @@ final class ComposeViewModel: ObservableObject {
             postDescription = source.summary ?? ""
             editingPostId = serverId
             editingDisplayTitle = post.displayTitle
+            editingWasArticle = !(source.title ?? "").isEmpty
             return true
         } catch APIError.unauthorized {
             session.reportUnauthorized(); return false
@@ -296,6 +312,7 @@ final class ComposeViewModel: ObservableObject {
         audioCategory = ""
         editingPostId = nil
         editingDisplayTitle = ""
+        editingWasArticle = false
     }
 
     private static func mimeType(for url: URL) -> String {

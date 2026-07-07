@@ -65,6 +65,9 @@ struct EditProfileView: View {
                         .font(.body).frame(height: 64)
                         .padding(4).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
 
+                    Text("Bios are a single paragraph — line breaks become spaces. Leaving a field blank restores your site's default.")
+                        .font(.caption2).foregroundStyle(.secondary)
+
                     ColorPicker("Accent color", selection: $accent, supportsOpacity: false)
 
                     if let error {
@@ -157,6 +160,7 @@ struct EditProfileView: View {
 
     private func upload(_ url: URL) async {
         guard let client = session.client else { return }
+        let target = pickTarget // capture now — a re-tap mid-upload must not misroute this result
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let data = try? Data(contentsOf: url) else {
@@ -168,7 +172,7 @@ struct EditProfileView: View {
         do {
             let upload = try await client.uploadMedia(data, filename: url.lastPathComponent,
                                                       mimeType: mimeType(for: url))
-            switch pickTarget {
+            switch target {
             case .avatar: pendingAvatarPath = upload.url; pendingAvatarPreview = data
             case .banner: pendingBannerPath = upload.url; pendingBannerPreview = data
             }
@@ -184,12 +188,19 @@ struct EditProfileView: View {
 
     private func save() async {
         guard let client = session.client else { return }
+        // The server forbids newlines in every profile field — flatten to a single
+        // paragraph so a multi-line bio can't fail the whole save with an opaque 400.
+        let cleanName = singleLine(authorName)
+        let cleanTagline = singleLine(tagline)
+        let cleanBio = singleLine(bio)
+        let cleanSummary = singleLine(summary)
+
         // Only send what changed (the server requires ≥1 field and leaves the rest).
         let newHex = accent.hexRRGGBB ?? initialAccentHex
-        let nameChange = authorName != (account.authorName ?? "") ? authorName : nil
-        let taglineChange = tagline != (account.tagline ?? "") ? tagline : nil
-        let bioChange = bio != (account.bio ?? "") ? bio : nil
-        let summaryChange = summary != (account.summary ?? "") ? summary : nil
+        let nameChange = cleanName != (account.authorName ?? "") ? cleanName : nil
+        let taglineChange = cleanTagline != (account.tagline ?? "") ? cleanTagline : nil
+        let bioChange = cleanBio != (account.bio ?? "") ? cleanBio : nil
+        let summaryChange = cleanSummary != (account.summary ?? "") ? cleanSummary : nil
         let accentChange = newHex.lowercased() != initialAccentHex.lowercased() ? newHex : nil
 
         let anyChange = nameChange != nil || taglineChange != nil || bioChange != nil
@@ -200,7 +211,7 @@ struct EditProfileView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            _ = try await client.updateProfile(
+            let result = try await client.updateProfile(
                 authorName: nameChange,
                 bio: bioChange,
                 tagline: taglineChange,
@@ -209,6 +220,10 @@ struct EditProfileView: View {
                 avatarPath: pendingAvatarPath,
                 bannerPath: pendingBannerPath
             )
+            // Apply the authoritative response immediately (so a field the server
+            // reverted to its default shows correctly even if the refetch below fails),
+            // then refresh counts/etc. best-effort.
+            session.applyProfile(result.profile)
             await session.refreshAccount()
             onDone()
         } catch APIError.unauthorized {
@@ -225,6 +240,12 @@ struct EditProfileView: View {
             Text(label).font(.caption).bold().foregroundStyle(.secondary)
             TextField(label, text: text).textFieldStyle(.roundedBorder).labelsHidden()
         }
+    }
+
+    private func singleLine(_ s: String) -> String {
+        s.replacingOccurrences(of: "\r\n", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
     }
 
     private func mimeType(for url: URL) -> String {

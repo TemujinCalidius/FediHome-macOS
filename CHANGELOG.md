@@ -7,6 +7,16 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Fixed
+- **Edit-features hardening** (from a verified multi-agent review): **Edit… now only appears on
+  published posts** — editing a draft or scheduled post would have federated its unpublished
+  content to followers immediately. Starting an edit while a new post is in progress asks before
+  discarding it. Profile bios are flattened to a single paragraph (the server rejects line breaks)
+  and the saved profile is shown authoritatively even when a field reverts to the site default.
+  Also fixed: an avatar/banner upload can't land in the wrong slot if you switch mid-upload; the
+  article/note badge no longer implies clearing a title converts the post; and a failed Edit no
+  longer leaves a stale error on the next New Post.
+
 ### Added
 - **Edit your own posts.** My Posts rows gain **Edit…** — the composer opens prefilled (title,
   text, description) in edit mode and saving federates an update. Attached media is kept as-is
