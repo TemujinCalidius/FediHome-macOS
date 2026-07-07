@@ -9,6 +9,8 @@ struct MyPostsView: View {
     @EnvironmentObject private var composeModel: ComposeViewModel
     @StateObject private var model = MyPostsViewModel()
     @State private var pendingDelete: OwnPost?
+    /// Set when Edit… would discard an in-progress new post — confirm first.
+    @State private var pendingEditOverwrite: OwnPost?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,6 +51,16 @@ struct MyPostsView: View {
             Text(pendingDelete?.status == .scheduled
                  ? "This removes the scheduled post — it won't publish."
                  : "This deletes the post from your instance and federates the removal.")
+        }
+        .confirmationDialog("Discard your unsent post?", isPresented: editOverwriteBinding,
+                            titleVisibility: .visible) {
+            Button("Discard & edit", role: .destructive) {
+                if let post = pendingEditOverwrite { performEdit(post) }
+                pendingEditOverwrite = nil
+            }
+            Button("Keep writing", role: .cancel) { pendingEditOverwrite = nil }
+        } message: {
+            Text("You have a post in progress in the composer. Editing this post replaces it.")
         }
     }
 
@@ -100,13 +112,23 @@ struct MyPostsView: View {
         }
     }
 
-    /// Prefill the composer with this post's source and switch to it in edit mode.
+    /// Edit entry point — guards an in-progress new post before overwriting it.
     private func beginEdit(_ post: OwnPost) {
+        if composeModel.hasUnsentInput {
+            pendingEditOverwrite = post
+        } else {
+            performEdit(post)
+        }
+    }
+
+    /// Prefill the composer with this post's source and switch to it in edit mode.
+    private func performEdit(_ post: OwnPost) {
         Task {
             if await composeModel.beginEditing(post, session: session) {
                 navigator.go(.compose)
             } else if let error = composeModel.errorMessage {
-                model.errorMessage = error // surface in this view's banner
+                model.errorMessage = error       // surface in this view's banner…
+                composeModel.errorMessage = nil  // …and don't leave it stale for New Post
             }
         }
     }
@@ -117,6 +139,10 @@ struct MyPostsView: View {
 
     private var deleteBinding: Binding<Bool> {
         Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
+    }
+
+    private var editOverwriteBinding: Binding<Bool> {
+        Binding(get: { pendingEditOverwrite != nil }, set: { if !$0 { pendingEditOverwrite = nil } })
     }
 }
 
@@ -160,7 +186,9 @@ private struct MyPostRow: View {
             Spacer()
 
             Menu {
-                if post.serverId != nil {
+                // Only published posts: editing federates an AP Update immediately, so
+                // editing a draft/scheduled post would leak its unpublished content.
+                if post.status == .published, post.serverId != nil {
                     Button("Edit…", action: onEdit)
                 }
                 if post.status == .published, let url = post.webURL(relativeTo: baseURL) {
