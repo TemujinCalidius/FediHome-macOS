@@ -179,6 +179,32 @@ public actor FediHomeClient {
         try await admin(action: "mark_all_dms_read", [:])
     }
 
+    // MARK: Owner profile (`manage` scope)
+
+    /// `update_profile` admin action — edits the owner's public profile post-setup
+    /// and federates an AP actor Update (FediHome#201). Only provided fields change.
+    /// Image paths come from `/api/media` uploads (the server normalizes absolute
+    /// same-origin URLs to `/uploads/…` paths).
+    public func updateProfile(
+        authorName: String? = nil,
+        bio: String? = nil,
+        tagline: String? = nil,
+        summary: String? = nil,
+        accentColor: String? = nil,
+        avatarPath: String? = nil,
+        bannerPath: String? = nil
+    ) async throws -> ProfileUpdateResult {
+        var body: [String: Any] = ["action": "update_profile"]
+        if let authorName { body["authorName"] = authorName }
+        if let bio { body["authorBio"] = bio }
+        if let tagline { body["authorTagline"] = tagline }
+        if let summary { body["actorSummary"] = summary }
+        if let accentColor { body["accentColor"] = accentColor }
+        if let avatarPath { body["avatarPath"] = avatarPath }
+        if let bannerPath { body["bannerPath"] = bannerPath }
+        return try await postJSON("/api/admin", body: body)
+    }
+
     // MARK: Own content (`read` scope) — the "My Posts" manager
 
     /// `GET /api/posts` — the owner's own posts, including drafts and scheduled.

@@ -18,6 +18,11 @@ public struct Account: Codable, Sendable, Equatable {
     public let name: String?
     public let authorName: String?
     public let summary: String?
+    /// Website "about" bio — distinct from `summary` (the fediverse actor bio).
+    /// Optional: older instances don't send these three (added with FediHome#201).
+    public let bio: String?
+    public let tagline: String?
+    public let accentColor: String?
     public let avatar: String
     public let banner: String
     public let counts: Counts

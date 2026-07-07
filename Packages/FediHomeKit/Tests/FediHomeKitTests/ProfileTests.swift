@@ -52,6 +52,46 @@ final class ProfileTests: XCTestCase {
     }
 }
 
+final class ProfileUpdateTests: XCTestCase {
+    func testUpdateResultDecodes() throws {
+        let json = Data("""
+        { "success": true, "profile": {
+            "authorName": "Samuel", "bio": "About me", "tagline": "Hi",
+            "summary": "Fedi bio", "accentColor": "#3b82f6",
+            "avatar": "https://fedihome.social/uploads/2026/07/a.webp",
+            "banner": "https://fedihome.social/images/banner.webp" } }
+        """.utf8)
+        let result = try JSONDecoder.fediHome.decode(ProfileUpdateResult.self, from: json)
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.profile.authorName, "Samuel")
+        XCTAssertEqual(result.profile.accentColor, "#3b82f6")
+    }
+
+    func testAccountDecodesWithAndWithoutNewProfileFields() throws {
+        let newServer = Data("""
+        { "me": "https://f.social", "actor": "https://f.social/ap/actor", "handle": "me",
+          "domain": "f.social", "fediAddress": "@me@f.social", "name": "Site",
+          "authorName": "Samuel", "summary": "fedi bio", "bio": "site bio",
+          "tagline": "hello", "accentColor": "#112233",
+          "avatar": "https://f.social/images/avatar.png", "banner": "https://f.social/images/banner.webp",
+          "counts": { "followers": 1, "following": 2, "posts": 3 } }
+        """.utf8)
+        let account = try JSONDecoder.fediHome.decode(Account.self, from: newServer)
+        XCTAssertEqual(account.bio, "site bio")
+        XCTAssertEqual(account.tagline, "hello")
+
+        let oldServer = Data("""
+        { "me": "https://f.social", "actor": "https://f.social/ap/actor", "handle": "me",
+          "domain": "f.social", "fediAddress": "@me@f.social", "name": "Site",
+          "authorName": "Samuel", "summary": "fedi bio",
+          "avatar": "https://f.social/images/avatar.png", "banner": "https://f.social/images/banner.webp",
+          "counts": { "followers": 1, "following": 2, "posts": 3 } }
+        """.utf8)
+        let legacy = try JSONDecoder.fediHome.decode(Account.self, from: oldServer)
+        XCTAssertNil(legacy.bio) // older instances still decode
+    }
+}
+
 final class GraphBlockedTests: XCTestCase {
     func testGraphDecodesWithBlockedList() throws {
         let json = Data("""

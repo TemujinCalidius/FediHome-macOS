@@ -11,11 +11,23 @@ struct MeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var bio: AttributedString?
+    @State private var editing = false
 
-    private var avatarURL: URL? { MediaURL.resolve(account.avatar, relativeTo: baseURL) }
-    private var bannerURL: URL? { MediaURL.resolve(account.banner, relativeTo: baseURL) }
+    /// After an edit, `session.account` carries the refreshed profile — the `account`
+    /// parameter is a snapshot from when the sheet opened.
+    private var current: Account { session.account ?? account }
+    private var avatarURL: URL? { MediaURL.resolve(current.avatar, relativeTo: baseURL) }
+    private var bannerURL: URL? { MediaURL.resolve(current.banner, relativeTo: baseURL) }
 
     var body: some View {
+        if editing {
+            EditProfileView(account: current, baseURL: baseURL) { editing = false }
+        } else {
+            profileBody
+        }
+    }
+
+    private var profileBody: some View {
         VStack(spacing: 0) {
             banner
             ScrollView {
@@ -23,8 +35,8 @@ struct MeView: View {
                     HStack(alignment: .bottom, spacing: 12) {
                         AsyncAvatar(url: avatarURL, size: 72)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(account.displayName).font(.title3).bold().lineLimit(1)
-                            Text(account.fediAddress).font(.callout).foregroundStyle(.secondary)
+                            Text(current.displayName).font(.title3).bold().lineLimit(1)
+                            Text(current.fediAddress).font(.callout).foregroundStyle(.secondary)
                                 .textSelection(.enabled).lineLimit(1)
                         }
                         Spacer()
@@ -52,9 +64,11 @@ struct MeView: View {
             }
             .buttonStyle(.plain).padding(10)
         }
-        .task {
-            if let summary = account.summary, !summary.isEmpty {
+        .task(id: current.summary) {
+            if let summary = current.summary, !summary.isEmpty {
                 bio = FediHTML.attributedString(from: summary)
+            } else {
+                bio = nil
             }
         }
     }
@@ -73,9 +87,9 @@ struct MeView: View {
 
     private var countsRow: some View {
         HStack(spacing: 28) {
-            countItem(account.counts.posts, "Posts")
-            countItem(account.counts.following, "Following")
-            countItem(account.counts.followers, "Followers")
+            countItem(current.counts.posts, "Posts")
+            countItem(current.counts.following, "Following")
+            countItem(current.counts.followers, "Followers")
             Spacer()
         }
     }
@@ -89,6 +103,7 @@ struct MeView: View {
 
     private var actions: some View {
         HStack {
+            Button { editing = true } label: { Label("Edit Profile", systemImage: "pencil") }
             Button { openURL(baseURL) } label: { Label("Open my site", systemImage: "safari") }
             Spacer()
             Button("Disconnect", role: .destructive) { session.disconnect(); dismiss() }
