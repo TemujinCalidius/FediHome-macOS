@@ -56,6 +56,14 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$EXPORT_DIR"
 
 echo "▸ Archiving $SCHEME (Release) — v$VERSION"
+if [[ "$MODE" == "direct" ]]; then
+  # Sign directly with Developer ID at archive time. Automatic signing would
+  # instead demand an "Apple Development" cert (which a Developer-ID-only setup
+  # doesn't have) — that's the "No signing certificate Mac Development" failure.
+  ARCHIVE_SIGN=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="${DEVELOPER_ID_APP:-Developer ID Application}")
+else
+  ARCHIVE_SIGN=(CODE_SIGN_STYLE=Automatic)   # App Store: needs Apple Distribution + a dev cert
+fi
 xcodebuild archive \
   -project "$ROOT/FediHome.xcodeproj" \
   -scheme "$SCHEME" \
@@ -63,30 +71,23 @@ xcodebuild archive \
   -destination 'generic/platform=macOS' \
   -archivePath "$ARCHIVE" \
   DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-  CODE_SIGN_STYLE=Automatic \
+  "${ARCHIVE_SIGN[@]}" \
   | tail -3
 
 case "$MODE" in
   direct)
-    IDENTITY="${DEVELOPER_ID_APP:-Developer ID Application}"
-    cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>method</key><string>developer-id</string>
-  <key>teamID</key><string>$DEVELOPMENT_TEAM</string>
-  <key>signingStyle</key><string>automatic</string>
-</dict></plist>
-PLIST
-
-    echo "▸ Exporting Developer ID app"
-    xcodebuild -exportArchive \
-      -archivePath "$ARCHIVE" \
-      -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
-      -exportPath "$EXPORT_DIR" | tail -3
-
+    # The archived app is already Developer-ID-signed (hardened runtime +
+    # entitlements from the project), so collect it straight from the archive —
+    # no exportArchive re-sign step (which is where automatic signing crept in).
     APP="$EXPORT_DIR/$APP_NAME.app"
-    [[ -d "$APP" ]] || die "export failed: $APP not found."
+    rm -rf "$APP"
+    cp -R "$ARCHIVE/Products/Applications/$APP_NAME.app" "$APP"
+    [[ -d "$APP" ]] || die "archive did not contain $APP_NAME.app"
+
+    echo "▸ Verifying Developer ID signature + hardened runtime"
+    codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 | sed 's/^/    /' \
+      || die "signature verification failed"
+    codesign -dvv "$APP" 2>&1 | grep -E "Authority=Developer ID|runtime" | sed 's/^/    /' || true
 
     echo "▸ Building DMG"
     DMG="$BUILD_DIR/$APP_NAME-$VERSION.dmg"
