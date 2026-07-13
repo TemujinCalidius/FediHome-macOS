@@ -31,8 +31,8 @@ FediHome uses a `dev`/`main` model: all code lands on `dev`; a release is a `dev
 # 0. Make sure dev is green and you've tested locally (⌘R).
 git checkout dev && git pull --ff-only
 
-# 1. Promote the changelog: rename "## Unreleased" to "## X.Y.Z — YYYY-MM-DD" (add a fresh
-#    empty "## Unreleased" above it), and bump MARKETING_VERSION in project.yml. Commit to dev.
+# 1. Promote the changelog: rename "## Upcoming" to "## X.Y.Z — YYYY-MM-DD" (add a fresh
+#    empty "## Upcoming" above it), and bump MARKETING_VERSION in project.yml. Commit to dev.
 
 # 2. Merge dev → main as a MERGE COMMIT.
 git checkout main && git pull --ff-only
