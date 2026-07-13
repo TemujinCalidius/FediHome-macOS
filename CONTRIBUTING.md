@@ -3,11 +3,6 @@
 Thanks for your interest in contributing to FediHome-macOS! This guide will help you get set up
 and understand how the project is organized.
 
-> **Heads up — private during pre-1.0.** FediHome-macOS is currently in **private development**
-> ahead of its **v1.0 open-source release**. This guide describes how contribution will work once
-> the repo is public; until then it's a reference for the maintainers, and everything here is being
-> written to be ready for outside contributors on day one.
-
 FediHome-macOS is a native **macOS** client for [FediHome](https://github.com/TemujinCalidius/FediHome),
 the self-hosted, single-user Fediverse app. It's the **first** of the native clients — the iOS and
 Android apps will follow the patterns proven here, so the **API client + data models are kept in a

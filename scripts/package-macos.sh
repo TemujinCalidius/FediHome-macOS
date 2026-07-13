@@ -117,13 +117,21 @@ case "$MODE" in
     hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" \
       -ov -format UDZO "$DMG" >/dev/null
 
+    # Sign the DMG itself too — a notarized+stapled but unsigned DMG is accepted by
+    # Gatekeeper on mount, but `spctl` reports "no usable signature", which is alarming.
+    # Signing removes all ambiguity (and must precede notarization, which hashes the DMG).
+    echo "▸ Signing the DMG"
+    codesign --force --timestamp --sign "${DEVELOPER_ID_APP:-Developer ID Application}" "$DMG"
+
     echo "▸ Notarizing the DMG (a few minutes)"
     xcrun notarytool submit "$DMG" "${NOTARY_ARGS[@]}" --wait
     echo "▸ Stapling the DMG"
     xcrun stapler staple "$DMG"
 
     echo "▸ Verifying Gatekeeper acceptance"
-    spctl -a -vvv --type install "$DMG" 2>&1 | sed 's/^/    /' || true
+    # A DMG is assessed with the 'open' policy ('install' is for .pkg installers).
+    spctl -a -vvv -t open --context context:primary-signature "$DMG" 2>&1 | sed 's/^/    /' || true
+    xcrun stapler validate "$DMG" 2>&1 | sed 's/^/    /' || true
     spctl -a -vvv "$APP" 2>&1 | sed 's/^/    /' || true
 
     echo
