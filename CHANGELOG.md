@@ -7,22 +7,6 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
-### Changed
-- **CI runs on `macos-15`.** The GitHub Actions runner moved off the now-deprecated `macos-14`
-  image to `macos-15` (the current `macos-latest`). The Swift 6 / Xcode 16 toolchain pin is
-  unchanged — that image still ships Xcode 16.4, which the `Xcode_16*` selector resolves to.
-  CI-only; no app behaviour changes.
-
-### Fixed
-- **Edit-features hardening** (from a verified multi-agent review): **Edit… now only appears on
-  published posts** — editing a draft or scheduled post would have federated its unpublished
-  content to followers immediately. Starting an edit while a new post is in progress asks before
-  discarding it. Profile bios are flattened to a single paragraph (the server rejects line breaks)
-  and the saved profile is shown authoritatively even when a field reverts to the site default.
-  Also fixed: an avatar/banner upload can't land in the wrong slot if you switch mid-upload; the
-  article/note badge no longer implies clearing a title converts the post; and a failed Edit no
-  longer leaves a stale error on the next New Post.
-
 ### Added
 - **Edit your own posts.** My Posts rows gain **Edit…** — the composer opens prefilled (title,
   text, description) in edit mode and saving federates an update. Attached media is kept as-is
@@ -55,30 +39,6 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   conversation still happens on Bluesky itself for now.
 - **Edit your own replies.** In a thread, your replies now show a pencil — the reply bar switches
   to edit mode (prefilled), and saving federates the update.
-
-### Fixed
-- **Thread refresh failures are no longer silent** — if the reload after sending/editing a reply
-  fails, an alert explains the view may be stale (the change itself was sent).
-- **Icon generator is display-independent** — regenerating on a Retina Mac no longer produces
-  wrongly-sized PNGs (renders into exact-pixel bitmaps and self-checks dimensions).
-- **Empty pages now start from the top** like every other page — loading, error, and empty states
-  across Feed, Notifications, People, Messages, My Posts, and threads were vertically centered.
-- **Images are cached** (memory + disk), so avatars and feed media stop re-downloading on every
-  scroll and relaunch.
-- **The app remembers your last section** across launches instead of always opening on Feed.
-- **Compose correctness sweep** (from a verified multi-agent review): posting is now blocked with a
-  visible reason when the server would reject it (empty text, unfinished video URL, past schedule
-  time); a draft in progress **survives switching sidebar sections**; saving a draft says "Draft
-  saved" (not "Posted"); unreadable files and unsupported image types are surfaced instead of
-  silently skipped; filenames with quotes no longer corrupt uploads.
-- **Video-link detection tightened** — Wikipedia-style `/w/…` pages and lookalike domains
-  (`notvimeo.com`) are no longer treated as embeddable videos, in compose and in the feed.
-- **My Posts** — changing filters mid-scroll can't mix pages from the old filter anymore, and
-  delete/paging failures show a dismissible banner instead of failing silently.
-- **People/profiles** — follow/unfollow/block from a person's popover now refreshes the lists, and
-  an expired session during a profile load triggers reconnect instead of a wrong "Follow" state.
-
-### Added
 - **Block list & unblock.** People gains a **Blocked** tab listing everyone you've blocked, with an
   **Unblock** button (confirmed; federates the Undo). After blocking from a profile card, the card
   offers Unblock right there. Older instances without block tracking still work (empty tab).
@@ -104,32 +64,6 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   not in the app), and **Bluesky/Threads cross-posting** is now an explicit per-post toggle. Drafts
   still save via Micropub and carry the description as their excerpt. (Closes the app side of #14
   and #18; needs a FediHome instance on the current dev.)
-
-### Changed
-- **CI** — a GitHub Actions workflow builds the app and runs the FediHomeKit package tests on every
-  PR to (and push to) `dev`/`main` (XcodeGen-generated project, Xcode 16 / Swift 6).
-
-### Fixed
-- **Read notifications no longer resurrect themselves** — a stale in-flight poll could overwrite a
-  just-completed *mark all read* (and the menu-bar badge); loads now discard superseded responses
-  (same guard added to the feed and DM loads).
-- **Compose no longer loses text typed while posting** — the editor is disabled during an in-flight post.
-- **Notification avatars** now resolve relative paths against the instance URL (were sometimes blank).
-- **Menu-bar "Open" reuses the existing window** instead of occasionally opening a duplicate.
-- **Clicking a notification no longer errors (-50)** — relative target paths (e.g. `/post/slug`) are
-  resolved against the instance URL before opening.
-- **Notifications are now actionable** — a **Mark all read** button (clears the count + menu-bar
-  badge), an unread dot on new items, and clicking a notification opens its post/actor. The DM badge
-  also clears as conversations are read.
-- **DM conversation list showed raw HTML** in the message preview — now stripped to plain text (the
-  thread bubbles were already fixed).
-- **Direct messages rendered raw HTML tags** — incoming DM content is now rendered cleanly (via the
-  same HTML renderer as posts) instead of showing literal `<p>` tags.
-- **Notifications and DMs now refresh on their own** while their section is open (polling), so new
-  likes/boosts/replies and incoming messages appear without a manual refresh.
-- **Unreadable "Unfollow" button** on the profile card (dark-on-dark) — now a legible bordered button.
-
-### Added
 - **Feed & notification filters.** A timeline filter to show/hide **replies** and **boosts**
   (re-queries `/api/feed`), and a **notifications** filter (all / replies & mentions / likes /
   boosts / follows / messages).
@@ -195,3 +129,62 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   (`SECURITY.md`), this changelog, issue & PR templates, Dependabot config, a changelog-enforcement
   workflow, and the `dev`/`main` branching model. No app code yet — the repo is being made
   clean-and-ready ahead of its v1.0 open-source release.
+
+### Changed
+- **CI runs on `macos-15`.** The GitHub Actions runner moved off the now-deprecated `macos-14`
+  image to `macos-15` (the current `macos-latest`). The Swift 6 / Xcode 16 toolchain pin is
+  unchanged — that image still ships Xcode 16.4, which the `Xcode_16*` selector resolves to.
+  CI-only; no app behaviour changes.
+- **CI** — a GitHub Actions workflow builds the app and runs the FediHomeKit package tests on every
+  PR to (and push to) `dev`/`main` (XcodeGen-generated project, Xcode 16 / Swift 6).
+
+### Fixed
+- **Edit-features hardening** (from a verified multi-agent review): starting an edit while a new
+  post is in progress asks before discarding it; profile bios are flattened to a single paragraph
+  (the server rejects line breaks) and the saved profile is shown authoritatively even when a field
+  reverts to the site default; an avatar/banner upload can't land in the wrong slot if you switch
+  mid-upload; the article/note badge no longer implies clearing a title converts the post; and a
+  failed Edit no longer leaves a stale error on the next New Post.
+- **Thread refresh failures are no longer silent** — if the reload after sending/editing a reply
+  fails, an alert explains the view may be stale (the change itself was sent).
+- **Icon generator is display-independent** — regenerating on a Retina Mac no longer produces
+  wrongly-sized PNGs (renders into exact-pixel bitmaps and self-checks dimensions).
+- **Empty pages now start from the top** like every other page — loading, error, and empty states
+  across Feed, Notifications, People, Messages, My Posts, and threads were vertically centered.
+- **Images are cached** (memory + disk), so avatars and feed media stop re-downloading on every
+  scroll and relaunch.
+- **The app remembers your last section** across launches instead of always opening on Feed.
+- **Compose correctness sweep** (from a verified multi-agent review): posting is now blocked with a
+  visible reason when the server would reject it (empty text, unfinished video URL, past schedule
+  time); a draft in progress **survives switching sidebar sections**; saving a draft says "Draft
+  saved" (not "Posted"); unreadable files and unsupported image types are surfaced instead of
+  silently skipped; filenames with quotes no longer corrupt uploads.
+- **Video-link detection tightened** — Wikipedia-style `/w/…` pages and lookalike domains
+  (`notvimeo.com`) are no longer treated as embeddable videos, in compose and in the feed.
+- **My Posts** — changing filters mid-scroll can't mix pages from the old filter anymore, and
+  delete/paging failures show a dismissible banner instead of failing silently.
+- **People/profiles** — follow/unfollow/block from a person's popover now refreshes the lists, and
+  an expired session during a profile load triggers reconnect instead of a wrong "Follow" state.
+- **Read notifications no longer resurrect themselves** — a stale in-flight poll could overwrite a
+  just-completed *mark all read* (and the menu-bar badge); loads now discard superseded responses
+  (same guard added to the feed and DM loads).
+- **Compose no longer loses text typed while posting** — the editor is disabled during an in-flight post.
+- **Notification avatars** now resolve relative paths against the instance URL (were sometimes blank).
+- **Menu-bar "Open" reuses the existing window** instead of occasionally opening a duplicate.
+- **Clicking a notification no longer errors (-50)** — relative target paths (e.g. `/post/slug`) are
+  resolved against the instance URL before opening.
+- **Notifications are now actionable** — a **Mark all read** button (clears the count + menu-bar
+  badge), an unread dot on new items, and clicking a notification opens its post/actor. The DM badge
+  also clears as conversations are read.
+- **DM conversation list showed raw HTML** in the message preview — now stripped to plain text (the
+  thread bubbles were already fixed).
+- **Direct messages rendered raw HTML tags** — incoming DM content is now rendered cleanly (via the
+  same HTML renderer as posts) instead of showing literal `<p>` tags.
+- **Notifications and DMs now refresh on their own** while their section is open (polling), so new
+  likes/boosts/replies and incoming messages appear without a manual refresh.
+- **Unreadable "Unfollow" button** on the profile card (dark-on-dark) — now a legible bordered button.
+
+### Security
+- **Editing is restricted to published posts**, so an edit can't federate an unpublished draft or
+  scheduled post's content to your followers — defense-in-depth alongside a coordinated server-side
+  fix in FediHome (advisory GHSA-x3j3-ghcw-8r77).
