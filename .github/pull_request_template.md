@@ -12,7 +12,7 @@
 
 ## Checklist
 
-- [ ] Added an entry to **`CHANGELOG.md`** under `## Unreleased` (or applied the `skip-changelog` label if no entry is warranted — e.g. a CI-only or trivial docs change)
+- [ ] Added an entry to **`CHANGELOG.md`** under `## Upcoming` (or applied the `skip-changelog` label if no entry is warranted — e.g. a CI-only or trivial docs change)
 - [ ] Build + tests pass (CI is green)
 - [ ] **No secrets or personal data added** — tokens live in the Keychain, never in code, logs, or the repo (this repo is destined to be public)
 - [ ] **Portable layer stays UI-agnostic** — the API client / data-model package imports no `SwiftUI` or `AppKit` and stays reusable by iOS
