@@ -21,7 +21,7 @@ jobs:
     name: Build & test
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select Xcode 16 (Swift 6 toolchain)
         run: |
