@@ -3,11 +3,6 @@
 Thanks for your interest in contributing to FediHome-macOS! This guide will help you get set up
 and understand how the project is organized.
 
-> **Heads up — private during pre-1.0.** FediHome-macOS is currently in **private development**
-> ahead of its **v1.0 open-source release**. This guide describes how contribution will work once
-> the repo is public; until then it's a reference for the maintainers, and everything here is being
-> written to be ready for outside contributors on day one.
-
 FediHome-macOS is a native **macOS** client for [FediHome](https://github.com/TemujinCalidius/FediHome),
 the self-hosted, single-user Fediverse app. It's the **first** of the native clients — the iOS and
 Android apps will follow the patterns proven here, so the **API client + data models are kept in a
@@ -30,12 +25,20 @@ clean, portable, UI-agnostic layer** that iOS can reuse and Android can mirror.
    cd FediHome-macOS
    ```
 
-2. **Open the project in Xcode** and build (⌘B) / run (⌘R). The API-client Swift package resolves
-   its dependencies automatically on first open.
+2. **Generate the Xcode project.** `FediHome.xcodeproj` is git-ignored — `project.yml` is the source
+   of truth. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) and run:
+   ```bash
+   xcodegen generate
+   ```
+   Re-run this whenever you add/rename files or change `project.yml`.
 
-3. **Point the app at a FediHome instance.** In onboarding, connect a self-hosted instance (URL +
-   app token) or sign in to a hosted one. The token is stored in the **Keychain** — never in a
-   file, log, or the repo.
+3. **Open & run.** `open FediHome.xcodeproj`, then build (⌘B) / run (⌘R). The `FediHomeKit` Swift
+   package resolves automatically on first open.
+
+4. **Point the app at a FediHome instance.** On the Connect screen, enter your instance URL
+   (defaults to `https://fedihome.social`) and sign in via OAuth — the owner authenticates **on their
+   own site**, and the app stores a scoped bearer token in the **Keychain** (never a file, log, or
+   the repo).
 
 > The **networking + data-model layer is a standalone Swift package** meant to be reused by the iOS
 > app. Keep it **UI-agnostic** — no `SwiftUI` / `AppKit` imports in that layer — so it stays
