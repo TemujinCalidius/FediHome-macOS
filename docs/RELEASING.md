@@ -86,10 +86,12 @@ Verify on a "clean" state (simulate a fresh download): the script runs `spctl`, 
 `xattr -w com.apple.quarantine "0081;0;;" build/FediHome-*.dmg` then open it — Gatekeeper should
 accept it with no warning.
 
-**Publish the GitHub Release** with the DMG attached:
+**Publish the GitHub Release** with the DMG attached. `--discussion-category "Announcements"` also
+posts a linked **announcement** in the Discussions tab automatically:
 ```bash
 gh release create vX.Y.Z build/FediHome-X.Y.Z.dmg \
   --title "FediHome vX.Y.Z" \
+  --discussion-category "Announcements" \
   --notes-file <(sed -n '/## X.Y.Z/,/## /p' CHANGELOG.md | sed '$d')
 ```
 (Or let Claude do the `gh release create` step once you hand over the built DMG path.)
