@@ -27,21 +27,36 @@ Semver: **MAJOR** = breaking, **MINOR** = backward-compatible feature, **PATCH**
 FediHome uses a `dev`/`main` model: all code lands on `dev`; a release is a `dev` → `main`
 **merge commit** (never a squash — the branches must stay in sync).
 
+The changelog's **`## Unreleased`** accumulator lives on **`dev` only**. `main`'s CHANGELOG must
+show **only released versions** — never a pending/`## Unreleased` section (it's confusing on the
+released branch). To keep it that way, promote the accumulator *before* merging to `main`, and add
+the fresh empty one back to `dev` *after*:
+
 ```bash
 # 0. Make sure dev is green and you've tested locally (⌘R).
 git checkout dev && git pull --ff-only
 
-# 1. Promote the changelog: rename "## Upcoming" to "## X.Y.Z — YYYY-MM-DD" (add a fresh
-#    empty "## Upcoming" above it), and bump MARKETING_VERSION in project.yml. Commit to dev.
+# 1. Promote the changelog on dev: rename "## Unreleased" to "## X.Y.Z — YYYY-MM-DD"
+#    (do NOT add a fresh "## Unreleased" yet), and bump MARKETING_VERSION in project.yml. Commit.
 
-# 2. Merge dev → main as a MERGE COMMIT.
+# 2. Merge dev → main as a MERGE COMMIT. Because dev's top is now "## X.Y.Z" (not a bare
+#    accumulator), main receives only released versions.
 git checkout main && git pull --ff-only
 git merge --no-ff dev -m "release: vX.Y.Z"
 
 # 3. Tag and push.
 git tag -a vX.Y.Z -m "FediHome vX.Y.Z"
 git push origin main --follow-tags
+
+# 4. Back on dev, add a fresh empty "## Unreleased" at the top for the next cycle. dev-only.
+git checkout dev
+#    …edit CHANGELOG.md: add "## Unreleased" above "## X.Y.Z"…
+git commit -am "chore: open the next changelog cycle"
+git push origin dev
 ```
+
+> If a `dev` → `main` merge ever surfaces a bare `## Unreleased` on `main` (e.g. step 1 was
+> skipped), just delete that section from `main`'s CHANGELOG — `main` lists released versions only.
 
 ---
 

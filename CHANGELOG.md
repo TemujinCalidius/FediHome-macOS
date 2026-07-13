@@ -2,10 +2,10 @@
 
 All notable changes to FediHome-macOS are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project aims to follow
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html). At release time, `## Upcoming`
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html). At release time, `## Unreleased`
 is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
-## Upcoming
+## Unreleased
 
 ## 1.0.1 — 2026-07-13
 
