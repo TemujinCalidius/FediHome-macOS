@@ -7,6 +7,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+## 1.0.0 — 2026-07-13
+
+First public release — a feature-complete native macOS client for FediHome.
+
 ### Added
 - **Edit your own posts.** My Posts rows gain **Edit…** — the composer opens prefilled (title,
   text, description) in edit mode and saving federates an update. Attached media is kept as-is
