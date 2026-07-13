@@ -89,7 +89,26 @@ case "$MODE" in
       || die "signature verification failed"
     codesign -dvv "$APP" 2>&1 | grep -E "Authority=Developer ID|runtime" | sed 's/^/    /' || true
 
-    echo "▸ Building DMG"
+    NOTARY_ARGS=()
+    if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+      NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+    elif [[ -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_KEY_ISSUER_ID:-}" && -n "${NOTARY_KEY_PATH:-}" ]]; then
+      NOTARY_ARGS=(--key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_KEY_ISSUER_ID")
+    else
+      die "notary creds missing: set NOTARY_PROFILE, or NOTARY_KEY_ID + NOTARY_KEY_ISSUER_ID + NOTARY_KEY_PATH."
+    fi
+
+    # Notarize the APP first, then staple it — so the app that ends up inside the
+    # DMG is itself stapled (works offline). Then notarize + staple the DMG. The
+    # DMG must be the exact file that was submitted, so it is NOT rebuilt afterward.
+    echo "▸ Notarizing the app (a few minutes)"
+    APP_ZIP="$BUILD_DIR/$APP_NAME.zip"
+    ditto -c -k --keepParent "$APP" "$APP_ZIP"
+    xcrun notarytool submit "$APP_ZIP" "${NOTARY_ARGS[@]}" --wait
+    echo "▸ Stapling the app"
+    xcrun stapler staple "$APP"
+
+    echo "▸ Building DMG (with the stapled app)"
     DMG="$BUILD_DIR/$APP_NAME-$VERSION.dmg"
     STAGE="$BUILD_DIR/dmg"
     rm -rf "$STAGE"; mkdir -p "$STAGE"
@@ -98,22 +117,9 @@ case "$MODE" in
     hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" \
       -ov -format UDZO "$DMG" >/dev/null
 
-    echo "▸ Notarizing (this can take a few minutes)"
-    if [[ -n "${NOTARY_PROFILE:-}" ]]; then
-      NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
-    elif [[ -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_KEY_ISSUER_ID:-}" && -n "${NOTARY_KEY_PATH:-}" ]]; then
-      NOTARY_ARGS=(--key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_KEY_ISSUER_ID")
-    else
-      die "notary creds missing: set NOTARY_PROFILE, or NOTARY_KEY_ID + NOTARY_KEY_ISSUER_ID + NOTARY_KEY_PATH."
-    fi
+    echo "▸ Notarizing the DMG (a few minutes)"
     xcrun notarytool submit "$DMG" "${NOTARY_ARGS[@]}" --wait
-
-    echo "▸ Stapling"
-    xcrun stapler staple "$APP"        # staple the app…
-    # rebuild the DMG so the stapled app is the one users get, then staple the DMG too
-    rm -f "$DMG"; rm -rf "$STAGE"; mkdir -p "$STAGE"
-    cp -R "$APP" "$STAGE/"; ln -s /Applications "$STAGE/Applications"
-    hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+    echo "▸ Stapling the DMG"
     xcrun stapler staple "$DMG"
 
     echo "▸ Verifying Gatekeeper acceptance"
