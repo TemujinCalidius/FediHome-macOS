@@ -7,6 +7,14 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+## 1.0.1 — 2026-07-13
+
+### Fixed
+- **The feed no longer crashes on posts with an inline video.** Video playback now uses AppKit's
+  `AVPlayerView` instead of SwiftUI's `VideoPlayer`, which could crash during feed layout on some
+  macOS/toolchain combinations (a Swift metadata fault inside `_AVKit_SwiftUI`). The native player
+  also brings inline controls, full-screen, and Picture-in-Picture.
+
 ## 1.0.0 — 2026-07-13
 
 First public release — a feature-complete native macOS client for FediHome.
