@@ -7,6 +7,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Changed
+- **CI runs on `macos-15`.** The GitHub Actions runner moved off the now-deprecated `macos-14`
+  image to `macos-15` (the current `macos-latest`). The Swift 6 / Xcode 16 toolchain pin is
+  unchanged — that image still ships Xcode 16.4, which the `Xcode_16*` selector resolves to.
+  CI-only; no app behaviour changes.
+
 ### Fixed
 - **Edit-features hardening** (from a verified multi-agent review): **Edit… now only appears on
   published posts** — editing a draft or scheduled post would have federated its unpublished
