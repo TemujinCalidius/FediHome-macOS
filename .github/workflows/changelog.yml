@@ -1,6 +1,6 @@
 name: Changelog
 
-# Require every PR to update CHANGELOG.md (under "## Upcoming"), unless it
+# Require every PR to update CHANGELOG.md (under "## Unreleased"), unless it
 # carries the "skip-changelog" label. Keeps the changelog in lockstep with the code.
 on:
   pull_request:
@@ -31,6 +31,6 @@ jobs:
           if printf '%s\n' "$files" | grep -qx 'CHANGELOG.md'; then
             echo "✓ CHANGELOG.md updated."
           else
-            echo "::error::This PR doesn't update CHANGELOG.md. Add an entry under '## Upcoming', or apply the 'skip-changelog' label if no entry is warranted."
+            echo "::error::This PR doesn't update CHANGELOG.md. Add an entry under '## Unreleased', or apply the 'skip-changelog' label if no entry is warranted."
             exit 1
           fi
