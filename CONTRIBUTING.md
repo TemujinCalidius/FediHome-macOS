@@ -77,7 +77,7 @@ Use branch prefixes: `feat/*`, `fix/*`, `docs/*` (e.g. `feat/timeline-view`).
 
 `main` is the default branch, so a fresh PR targets `main` — **retarget code PRs to `dev`.** A code
 PR left on `main` will be asked to retarget. Releases are cut by maintainers: `dev` is merged into
-`main` (a **merge commit**, not a squash, so the branches stay in sync), `## Upcoming` is promoted
+`main` (a **merge commit**, not a squash, so the branches stay in sync), `## Unreleased` is promoted
 to the new version, and `main` is tagged + a GitHub Release is published.
 
 ## Making a Pull Request
@@ -107,11 +107,12 @@ to the new version, and `main` is tagged + a GitHub Release is published.
    screenshot/clip for anything visible in the UI.
 
 **Changelog (required).** Every pull request must add an entry to [`CHANGELOG.md`](CHANGELOG.md)
-under the `## Upcoming` heading (create it if missing), grouped under
+under the `## Unreleased` heading (create it if missing), grouped under
 `### Added` / `### Changed` / `### Fixed` / `### Security`, with `(#N)` referencing the issue or PR.
 CI enforces this. If a change genuinely warrants no entry (a docs-only PR, a CI-config tweak, a typo
-fix), apply the `skip-changelog` label to bypass the check. At release time, `## Upcoming` is
-renamed to the new version.
+fix), apply the `skip-changelog` label to bypass the check. At release time, `## Unreleased` is
+renamed to the new version. The `## Unreleased` accumulator lives on **`dev` only** — `main`'s
+CHANGELOG lists released versions only (see [`docs/RELEASING.md`](docs/RELEASING.md)).
 
 **Tracking staged fixes (`fixed-pending-merge`).** When a PR implements the fix for an open issue or
 a security alert (Dependabot / code-scanning), maintainers label it `fixed-pending-merge` (and the
