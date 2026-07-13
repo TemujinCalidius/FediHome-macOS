@@ -86,10 +86,12 @@ Verify on a "clean" state (simulate a fresh download): the script runs `spctl`, 
 `xattr -w com.apple.quarantine "0081;0;;" build/FediHome-*.dmg` then open it — Gatekeeper should
 accept it with no warning.
 
-**Publish the GitHub Release** with the DMG attached:
+**Publish the GitHub Release** with the DMG attached. `--discussion-category "Announcements"` also
+posts a linked **announcement** in the Discussions tab automatically:
 ```bash
 gh release create vX.Y.Z build/FediHome-X.Y.Z.dmg \
   --title "FediHome vX.Y.Z" \
+  --discussion-category "Announcements" \
   --notes-file <(sed -n '/## X.Y.Z/,/## /p' CHANGELOG.md | sed '$d')
 ```
 (Or let Claude do the `gh release create` step once you hand over the built DMG path.)
@@ -136,9 +138,43 @@ steps are all in Apple's portals (only you can do these — they need your accou
 
 ---
 
-## 5. Optional — CI release workflow (later)
+## 5. App Store upload from CI (no local Xcode needed)
 
-For now the release is cut locally with the script above (you hold the certs). If you later want a
-tag-triggered CI build, add a `release.yml` that imports a base64 `.p12` cert + notary creds from
-**GitHub Actions secrets** and runs `scripts/package-macos.sh`. Deferred — the local path is simpler
-and keeps signing material off CI.
+The **[`App Store` workflow](../.github/workflows/release-appstore.yml)** builds, signs, and uploads
+to App Store Connect on a GitHub-hosted macOS runner (release Xcode + release macOS). Use it when
+your local machine can't produce an App-Store-valid build (e.g. you're on a macOS/Xcode **beta** —
+Apple rejects beta-built binaries). It's **free** on this public repo (unlimited standard-runner
+minutes). It signs with **Apple Distribution** and stamps a unique build number
+(`CURRENT_PROJECT_VERSION = the run number`), so re-uploads never collide.
+
+### One-time — Apple portal
+1. Register the bundle id **`social.fedihome.macos`** at
+   [Identifiers](https://developer.apple.com/account/resources/identifiers/list).
+2. Create the **App Store Connect app record** (macOS · name · bundle id · SKU).
+3. Create an **Apple Distribution** certificate (Xcode → Settings → Accounts → Manage Certificates →
+   `+` → *Apple Distribution*, or on the portal). Then in **Keychain Access**, export it *with its
+   private key* as a password-protected **`.p12`**.
+4. Create an **App Store Connect API key** ([Users and Access → Integrations →
+   App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api)) with the
+   **App Manager** role. Download the **`.p8`** (one-time) and note its **Key ID** + **Issuer ID**.
+
+### One-time — GitHub secrets (set them yourself; the values never leave your machine)
+Run these locally (each `--body`/prompt keeps the value on your machine and sends it straight to
+GitHub — Claude never sees them):
+```bash
+gh secret set DIST_CERT_P12_BASE64  < <(base64 -i /path/to/Distribution.p12)
+gh secret set DIST_CERT_PASSWORD                     # paste the .p12 export password
+gh secret set ASC_KEY_P8_BASE64     < <(base64 -i /path/to/AuthKey_XXXX.p8)
+gh secret set ASC_KEY_ID                             # the API Key ID
+gh secret set ASC_ISSUER_ID                          # the API Issuer ID
+gh secret set APPLE_TEAM_ID                          # your 10-char Team ID
+```
+
+### Each upload
+Actions tab → **App Store** → **Run workflow** (or `gh workflow run "App Store"`). It archives,
+provisions via the API key (`-allowProvisioningUpdates`), and uploads. Then finish in App Store
+Connect: pick the build, add screenshots (1280×800 / 2560×1600), set the privacy label to
+**"Data Not Collected"**, and submit for review.
+
+> The local `./scripts/package-macos.sh appstore` path (§4) still works if you ever have a release
+> Xcode locally — but the CI workflow is the beta-proof, zero-setup-per-release option.
