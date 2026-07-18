@@ -7,6 +7,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Changed
+- **CI/release now build on macOS 26 + Xcode 26.** The GitHub Actions runner moved from
+  `macos-15` to `macos-26` (generally available) and Xcode selection from 16 to 26, so the
+  automated build/test and App Store archive use the current Apple toolchain instead of one
+  two Xcode generations behind. No change to the app's macOS 14 deployment target.
+
 ## 1.1.0 — 2026-07-19
 
 ### Added
