@@ -88,6 +88,29 @@ final class OwnPostsTests: XCTestCase {
         XCTAssertEqual(legacy.displayTitle, "Untitled note")
     }
 
+    func testDecodesContentHtml() throws {
+        // Server returns the sanitized HTML body (FediHome#292) for the full-post view.
+        let post = try JSONDecoder.fediHome.decode(OwnPost.self, from: Data("""
+        { "slug": "s", "url": "/post/s", "title": "T", "excerpt": null, "preview": null,
+          "contentHtml": "<p>Hello <strong>world</strong></p>",
+          "category": "article", "type": "article", "status": "published", "published": true,
+          "publishedAt": "2026-07-01T10:00:00.000Z", "updatedAt": "2026-07-01T10:00:00.000Z",
+          "scheduledFor": null, "counts": { "likes": 0, "boosts": 0 },
+          "media": { "photos": 0, "videos": 0, "audio": 0 } }
+        """.utf8))
+        XCTAssertEqual(post.contentHtml, "<p>Hello <strong>world</strong></p>")
+
+        // A server without the field (or an older one) still decodes → nil.
+        let legacy = try JSONDecoder.fediHome.decode(OwnPost.self, from: Data("""
+        { "slug": "s2", "url": "/post/s2", "title": "T", "excerpt": null,
+          "category": "article", "type": "article", "status": "published", "published": true,
+          "publishedAt": "2026-07-01T10:00:00.000Z", "updatedAt": "2026-07-01T10:00:00.000Z",
+          "scheduledFor": null, "counts": { "likes": 0, "boosts": 0 },
+          "media": { "photos": 0, "videos": 0, "audio": 0 } }
+        """.utf8))
+        XCTAssertNil(legacy.contentHtml)
+    }
+
     func testPostSourceDecodes() throws {
         let json = Data("""
         { "type": ["h-entry"], "properties": {

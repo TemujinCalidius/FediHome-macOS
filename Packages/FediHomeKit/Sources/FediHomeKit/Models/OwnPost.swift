@@ -28,6 +28,9 @@ public struct OwnPost: Codable, Sendable, Identifiable, Equatable {
     /// Markup-stripped body preview (≤200 chars) from `GET /api/posts` (server v1.15.0+).
     /// Optional so pre-v1.15.0 instances still decode; `""` when the post is genuinely empty.
     public let preview: String?
+    /// Sanitized HTML body from `GET /api/posts` (FediHome#292). Optional so instances without
+    /// it decode `nil`; the "My Posts" full-post view then falls back to the plain preview.
+    public let contentHtml: String?
     public let category: String       // note | article | journal
     /// Derived kind: media takes precedence ("photo"/"video"/"audio"), else the category.
     public let type: String
@@ -45,7 +48,7 @@ public struct OwnPost: Codable, Sendable, Identifiable, Equatable {
     public var id: String { slug }
 
     enum CodingKeys: String, CodingKey {
-        case slug, url, title, excerpt, preview, category, type, status, published
+        case slug, url, title, excerpt, preview, contentHtml, category, type, status, published
         case publishedAt, updatedAt, scheduledFor, counts, media
         case serverId = "id"
     }

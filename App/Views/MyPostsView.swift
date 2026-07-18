@@ -11,6 +11,8 @@ struct MyPostsView: View {
     @State private var pendingDelete: OwnPost?
     /// Set when Edit… would discard an in-progress new post — confirm first.
     @State private var pendingEditOverwrite: OwnPost?
+    /// Post ids whose full body is expanded in the list.
+    @State private var expandedIDs: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -102,6 +104,8 @@ struct MyPostsView: View {
                 }
                 List(model.posts) { post in
                     MyPostRow(post: post, baseURL: session.resolvedBaseURL,
+                              isExpanded: expandedIDs.contains(post.id),
+                              onToggleExpand: { toggleExpand(post.id) },
                               onEdit: { beginEdit(post) },
                               onDelete: { pendingDelete = post })
                     .task { await model.loadMoreIfNeeded(current: post, session: session) }
@@ -110,6 +114,10 @@ struct MyPostsView: View {
                 .refreshable { await model.load(session: session) }
             }
         }
+    }
+
+    private func toggleExpand(_ id: String) {
+        if expandedIDs.contains(id) { expandedIDs.remove(id) } else { expandedIDs.insert(id) }
     }
 
     /// Edit entry point — guards an in-progress new post before overwriting it.
@@ -149,6 +157,8 @@ struct MyPostsView: View {
 private struct MyPostRow: View {
     let post: OwnPost
     let baseURL: URL
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
 
@@ -181,9 +191,25 @@ private struct MyPostRow: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+
+                if isExpanded {
+                    PostContentView(html: post.contentHtml,
+                                    fallback: post.excerpt ?? post.preview ?? "",
+                                    cacheID: post.id)
+                        .font(.callout)
+                        .padding(.top, 2)
+                }
             }
 
             Spacer()
+
+            Button(action: onToggleExpand) {
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(isExpanded ? "Hide full post" : "Show full post")
 
             Menu {
                 // Only published posts: editing federates an AP Update immediately, so
