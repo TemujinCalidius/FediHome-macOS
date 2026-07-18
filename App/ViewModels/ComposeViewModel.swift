@@ -46,6 +46,13 @@ final class ComposeViewModel: ObservableObject {
     @Published var addAudioToGallery = false
     @Published var audioCategory = ""
 
+    /// Gallery categories offered in the compose pickers, fetched once from the instance
+    /// config (FediHome#284). Empty until loaded / on an older instance → free-text only.
+    @Published private(set) var photoCategoryOptions: [MediaCategory] = []
+    @Published private(set) var videoCategoryOptions: [MediaCategory] = []
+    @Published private(set) var audioCategoryOptions: [MediaCategory] = []
+    private var didLoadConfig = false
+
     @Published private(set) var isUploading = false
     @Published private(set) var isPosting = false
     @Published var errorMessage: String?
@@ -262,11 +269,11 @@ final class ComposeViewModel: ObservableObject {
                                      durationSec: $0.durationSec, fileSize: $0.fileSize)
                     },
                     addToPhotography: addPhotosToGallery && !attachments.isEmpty,
-                    photoCategory: photoCategory,
+                    photoCategory: CategorySlug.slugify(photoCategory),
                     addToVideos: addVideoToGallery && !videos.isEmpty,
-                    videoCategory: videoCategory,
+                    videoCategory: CategorySlug.slugify(videoCategory),
                     addToAudio: addAudioToGallery && !audioAttachments.isEmpty,
-                    audioCategory: audioCategory,
+                    audioCategory: CategorySlug.slugify(audioCategory),
                     crosspostBluesky: crosspostBluesky,
                     crosspostThreads: crosspostThreads,
                     scheduledFor: isScheduling ? scheduledDate : nil
@@ -281,6 +288,21 @@ final class ComposeViewModel: ObservableObject {
             session.reportUnauthorized()
         } catch {
             errorMessage = Self.message(for: error)
+        }
+    }
+
+    /// Loads the instance's gallery categories once for the compose pickers. Silent on
+    /// failure — free-text entry still works and a later trigger can retry.
+    func loadCategoriesIfNeeded(session: SessionStore) async {
+        guard !didLoadConfig, let client = session.client else { return }
+        didLoadConfig = true
+        do {
+            let media = try await client.serverConfig().mediaCategories ?? .empty
+            photoCategoryOptions = media.photos
+            videoCategoryOptions = media.videos
+            audioCategoryOptions = media.audio
+        } catch {
+            didLoadConfig = false   // allow a retry on a later trigger; stay silent
         }
     }
 
