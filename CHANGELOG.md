@@ -7,6 +7,13 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Added
+- **Category dropdown in compose.** The photo/video/audio gallery **Category** fields now offer a
+  dropdown of your instance's existing categories (friendly labels) alongside free typing, and typed
+  categories are slugified so a multi-word name like "Photo walk" posts as `photo-walk` instead of
+  silently falling back to "general". Needs a FediHome instance that exposes `mediaCategories`
+  (dev/#284); older instances keep plain free-text entry. (#61)
+
 ## 1.0.1 — 2026-07-13
 
 ### Fixed

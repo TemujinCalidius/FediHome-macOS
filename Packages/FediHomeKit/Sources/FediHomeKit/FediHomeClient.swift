@@ -221,6 +221,13 @@ public actor FediHomeClient {
         return try await get("/api/posts", query: query)
     }
 
+    /// `GET /api/micropub?q=config` — the instance's Micropub config. `mediaCategories`
+    /// populates the compose gallery pickers; it's absent on instances older than the
+    /// build that shipped it (FediHome#284), in which case it decodes as `nil`.
+    public func serverConfig() async throws -> ServerConfig {
+        try await get("/api/micropub", query: [URLQueryItem(name: "q", value: "config")])
+    }
+
     /// Micropub `action=delete` (`delete` scope) — removes a post (a scheduled post's
     /// delete doubles as "cancel"), federates the removal. 204 on success.
     public func deletePost(url: String) async throws {

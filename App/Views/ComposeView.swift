@@ -52,6 +52,7 @@ struct ComposeView: View {
             .disabled(model.isPosting) // don't let text typed mid-post get wiped by reset()
         }
         .navigationTitle(model.isEditing ? "Edit Post" : "New Post")
+        .task { await model.loadCategoriesIfNeeded(session: session) }
         .toolbar {
             if model.isEditing {
                 Button("Cancel") { model.cancelEditing() }
@@ -196,10 +197,7 @@ struct ComposeView: View {
                         .toggleStyle(.checkbox)
                         .font(.callout)
                     if model.addPhotosToGallery {
-                        TextField("Category (optional)", text: $model.photoCategory)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: 180)
-                            .font(.callout)
+                        CategoryField(text: $model.photoCategory, options: model.photoCategoryOptions)
                     }
                     Spacer()
                 }
@@ -237,10 +235,7 @@ struct ComposeView: View {
                     .toggleStyle(.checkbox)
                     .font(.callout)
                 if model.addVideoToGallery {
-                    TextField("Category (optional)", text: $model.videoCategory)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 180)
-                        .font(.callout)
+                    CategoryField(text: $model.videoCategory, options: model.videoCategoryOptions)
                 }
                 Spacer()
             }
@@ -275,10 +270,7 @@ struct ComposeView: View {
                     .toggleStyle(.checkbox)
                     .font(.callout)
                 if model.addAudioToGallery {
-                    TextField("Category (optional)", text: $model.audioCategory)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 180)
-                        .font(.callout)
+                    CategoryField(text: $model.audioCategory, options: model.audioCategoryOptions)
                 }
                 Spacer()
             }
