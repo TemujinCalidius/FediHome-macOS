@@ -34,7 +34,7 @@ fediverse,mastodon,activitypub,indieweb,self-hosted,rss,microblog,decentralized,
 
 ## Description (≤4000)
 ```
-FediHome is a native Mac client for your own corner of the Fediverse — a calm, fast, menu-bar app for a self-hosted, single-user ActivityPub server.
+FediHome for macOS is a native Mac client for your own corner of the Fediverse — a calm, fast, menu-bar app for a self-hosted, single-user ActivityPub server.
 
 A FEED THAT RESPECTS YOU
 Your timeline is simply the people you follow, in the order they posted. No recommendation algorithm. No "suggested" or promoted posts. No ads. No endless-scroll or streak mechanics engineered to keep you staring. It works the way an RSS reader does — you decide who you follow, and you see their posts. That's it. Open the app, catch up, and get on with your day.
@@ -49,7 +49,7 @@ BUILT FOR THE MAC
 - Feels like a Mac app, because it is one
 
 YOUR INSTANCE, YOUR RULES
-FediHome connects to a FediHome server that you own and control. One account, one instance — no shared platform, no middleman. Because it speaks ActivityPub, you can follow and be followed across Mastodon and the wider Fediverse.
+FediHome for macOS connects to a FediHome server that you own and control. One account, one instance — no shared platform, no middleman. Because it speaks ActivityPub, you can follow and be followed across Mastodon and the wider Fediverse.
 
 PRIVATE BY DESIGN
 - No account is created with the developer
