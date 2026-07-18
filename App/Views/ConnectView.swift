@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConnectView: View {
     @EnvironmentObject private var session: SessionStore
+    @State private var accessToken = ""
 
     var body: some View {
         VStack(spacing: 20) {
@@ -48,6 +49,25 @@ struct ConnectView: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 360)
             }
+
+            DisclosureGroup("Advanced — sign in with a token") {
+                VStack(alignment: .leading, spacing: 8) {
+                    SecureField("Access token", text: $accessToken)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 360)
+                    Button("Sign in with token") {
+                        Task { await session.connectWithToken(accessToken) }
+                    }
+                    .disabled(session.isBusy
+                              || accessToken.trimmingCharacters(in: .whitespaces).isEmpty
+                              || session.instanceURLString.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Text("Paste a personal access token from your instance. Uses the instance URL above.")
+                        .font(.footnote)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: 360)
+            }
+            .frame(maxWidth: 360)
 
             Spacer()
 

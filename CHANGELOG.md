@@ -8,11 +8,20 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 ## Unreleased
 
 ### Added
+- **Sign in with an access token.** The Connect screen gains an "Advanced — sign in with a token"
+  option: paste your instance URL and a personal access token to connect directly, skipping the
+  OAuth browser round-trip. Useful for scoped, revocable tokens (e.g. a read-only reviewer token)
+  and headless setups. (#60)
 - **Category dropdown in compose.** The photo/video/audio gallery **Category** fields now offer a
   dropdown of your instance's existing categories (friendly labels) alongside free typing, and typed
   categories are slugified so a multi-word name like "Photo walk" posts as `photo-walk` instead of
   silently falling back to "general". Needs a FediHome instance that exposes `mediaCategories`
   (dev/#284); older instances keep plain free-text entry. (#61)
+
+### Fixed
+- **"My Posts" now previews untitled notes.** A microblog note (no title) used to show as a bare
+  "Untitled note"; the row now shows the note's body text so you can tell your posts apart. Needs a
+  FediHome instance on v1.15.0+ (which returns a post `preview`). (#59)
 
 ## 1.0.1 — 2026-07-13
 

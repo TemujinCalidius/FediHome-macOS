@@ -59,7 +59,7 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    /// Run the full OAuth flow, persist the token, and confirm identity.
+    /// Run the full OAuth flow, then hand off to `establish` to validate + persist.
     func connect() async {
         errorMessage = nil
         guard let instance = InstanceURL.normalize(instanceURLString) else {
@@ -69,26 +69,63 @@ final class SessionStore: ObservableObject {
         phase = .connecting
         do {
             let token = try await auth.authenticate(instance: instance)
-            let canonical = InstanceURL.normalize(token.me) ?? instance
-            let key = canonical.absoluteString
-
-            let stored = StoredToken(accessToken: token.accessToken, scope: token.scope, me: token.me)
-            try keychain.save(JSONEncoder().encode(stored), account: key)
-            UserDefaults.standard.set(key, forKey: Self.activeInstanceKey)
-            instanceURLString = key
-
-            let client = FediHomeClient(baseURL: canonical, token: token.accessToken)
-            let account = try await client.account()
-            self.client = client
-            self.baseURL = canonical
-            self.account = account
-            self.phase = .connected
+            // OAuth already tells us the canonical instance (token.me); dial that host.
+            let dial = InstanceURL.normalize(token.me) ?? instance
+            try await establish(dialURL: dial, accessToken: token.accessToken, scope: token.scope)
         } catch is AuthError {
             phase = .disconnected // user canceled — no error banner
         } catch {
             phase = .disconnected
             errorMessage = message(for: error)
         }
+    }
+
+    /// Sign in by pasting an access token (FediHome#60) — no OAuth browser round-trip.
+    /// Validation happens in `establish` via `account()`. Scope is enforced server-side
+    /// and never read back, so we store `""`.
+    func connectWithToken(_ accessToken: String) async {
+        errorMessage = nil
+        let token = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else {
+            errorMessage = "Paste an access token."
+            return
+        }
+        guard let instance = InstanceURL.normalize(instanceURLString) else {
+            errorMessage = "Enter a valid instance URL, e.g. https://fedihome.social"
+            return
+        }
+        phase = .connecting
+        do {
+            try await establish(dialURL: instance, accessToken: token, scope: "")
+        } catch APIError.unauthorized {
+            phase = .disconnected
+            errorMessage = "That token was rejected. Check the token and your instance URL."
+        } catch {
+            phase = .disconnected
+            errorMessage = message(for: error)
+        }
+    }
+
+    /// Shared connect tail for both sign-in paths: dial `dialURL` with `accessToken`,
+    /// validate the token and fetch identity via `account()` (401 → `APIError.unauthorized`),
+    /// persist under the canonical instance key, and flip to `.connected`. Throws on failure;
+    /// the caller owns `phase`/error handling. Validates *before* persisting, so a rejected
+    /// token never leaves a stale entry in the Keychain.
+    private func establish(dialURL: URL, accessToken: String, scope: String) async throws {
+        let client = FediHomeClient(baseURL: dialURL, token: accessToken)
+        let account = try await client.account()          // validates the token; 401 → .unauthorized
+        let canonical = InstanceURL.normalize(account.me) ?? dialURL
+        let key = canonical.absoluteString
+
+        let stored = StoredToken(accessToken: accessToken, scope: scope, me: account.me)
+        try keychain.save(JSONEncoder().encode(stored), account: key)
+        UserDefaults.standard.set(key, forKey: Self.activeInstanceKey)
+        instanceURLString = key
+
+        self.client = client
+        self.baseURL = canonical
+        self.account = account
+        self.phase = .connected
     }
 
     /// Applies an `update_profile` response to the current account in place, so the UI
