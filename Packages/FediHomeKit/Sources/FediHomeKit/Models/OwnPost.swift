@@ -25,6 +25,9 @@ public struct OwnPost: Codable, Sendable, Identifiable, Equatable {
     public let url: String
     public let title: String?
     public let excerpt: String?
+    /// Markup-stripped body preview (≤200 chars) from `GET /api/posts` (server v1.15.0+).
+    /// Optional so pre-v1.15.0 instances still decode; `""` when the post is genuinely empty.
+    public let preview: String?
     public let category: String       // note | article | journal
     /// Derived kind: media takes precedence ("photo"/"video"/"audio"), else the category.
     public let type: String
@@ -42,15 +45,18 @@ public struct OwnPost: Codable, Sendable, Identifiable, Equatable {
     public var id: String { slug }
 
     enum CodingKeys: String, CodingKey {
-        case slug, url, title, excerpt, category, type, status, published
+        case slug, url, title, excerpt, preview, category, type, status, published
         case publishedAt, updatedAt, scheduledFor, counts, media
         case serverId = "id"
     }
 
-    /// Display title: the title, else a trimmed excerpt, else a placeholder.
+    /// Display title: the title, else a trimmed excerpt, else the body preview, else a placeholder.
+    /// Promoting `preview` here lets a title-less microblog note show its body in "My Posts"
+    /// instead of a bare "Untitled note".
     public var displayTitle: String {
         if let title, !title.isEmpty { return title }
         if let excerpt, !excerpt.isEmpty { return excerpt }
+        if let preview, !preview.isEmpty { return preview }
         return "Untitled \(category)"
     }
 
