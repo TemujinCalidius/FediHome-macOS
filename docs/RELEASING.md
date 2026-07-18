@@ -178,3 +178,67 @@ Connect: pick the build, add screenshots (1280×800 / 2560×1600), set the priva
 
 > The local `./scripts/package-macos.sh appstore` path (§4) still works if you ever have a release
 > Xcode locally — but the CI workflow is the beta-proof, zero-setup-per-release option.
+
+---
+
+## 6. App Review Information (App Store Connect)
+
+Apple reviews **every** new build before public release, so set this once — it carries forward
+to each update. In App Store Connect → the version → **App Review Information**:
+
+- **Sign-In required:** ✅
+- **User Name:** `admin` (FediHome has no username — clarified in the notes)
+- **Password:** the demo instance's **admin secret** — paste it straight into ASC; **never commit it**
+- **Contact:** your name / phone / email
+- **Notes:** the template below
+
+**Access approach.** FediHome signs in via OAuth, whose authorize step uses the site's
+`ADMIN_SECRET`. For **v1.0** we hand the reviewer the **demo** instance's `ADMIN_SECRET`
+(`fedihome.social` is a throwaway test server) and **rotate it after approval**. Longer term,
+replace this with a **scoped, revocable reviewer token** — no master key, no per-update rotation —
+once **FediHome#255** (admin "generate scoped app token") and **FediHome-macOS#60** (sign in with a
+token) ship. Then the same token stays in the notes across every future update.
+
+**Review-notes template** (the secret lives only in the Password field — nothing sensitive here):
+
+```
+ABOUT
+FediHome is a native macOS menu-bar client for FediHome — a self-hosted, single-user
+Fediverse (ActivityPub) server, similar to how a mail client connects to your own mail
+server. The account you sign into is the single owner account for one specific instance;
+FediHome is one-account-per-instance by design. The app creates no account with the
+developer and connects only to the instance you point it at, over HTTPS. The access
+token is stored in the macOS Keychain.
+
+HOW THE FEED WORKS
+The timeline is a plain, chronological feed of posts from the accounts the instance
+owner follows — nothing else. There is no recommendation algorithm, no "suggested" or
+promoted content, no engagement ranking, and no infinite-scroll or notification
+mechanics designed to maximize time in the app. It is simply people's own posts in the
+order they were made — much like an RSS reader. (This demo account already follows
+several accounts, so the feed is populated.)
+
+HOW TO SIGN IN (demo instance provided)
+1. Launch FediHome — it appears in the menu bar and opens the main window.
+2. When prompted for an instance, enter:  https://fedihome.social
+3. You'll be taken to that site's own sign-in page. There is no username — enter the
+   admin secret from the Password field above, then approve the consent screen.
+4. The app loads the Feed.
+
+WHAT TO TRY
+- Switch sections with Cmd-1 to Cmd-6 (Feed, Notifications, New Post, People, Messages,
+  My Posts). Post with Cmd-N. Refresh with Cmd-R.
+- Read the feed, open a profile, check notifications, compose a post (optionally attach
+  a photo). The app also lives in the menu bar for quick posting and native notifications.
+
+NOTES
+- The app requires connecting to a FediHome instance; the demo above is a test server,
+  ready to use — no setup needed.
+- Open source (MIT). No analytics, tracking, or third-party data collection.
+- HTTPS only; ITSAppUsesNonExemptEncryption = false (export-compliance exempt).
+
+Contact: <your support / Apple ID email>
+```
+
+Store-listing copy (description, subtitle, promotional text, keywords, "What's New") lives in
+[`appstore-listing.md`](./appstore-listing.md).
