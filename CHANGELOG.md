@@ -7,6 +7,12 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+### Added
+- **Sign in with an access token.** The Connect screen gains an "Advanced — sign in with a token"
+  option: paste your instance URL and a personal access token to connect directly, skipping the
+  OAuth browser round-trip. Useful for scoped, revocable tokens (e.g. a read-only reviewer token)
+  and headless setups. (#60)
+
 ### Fixed
 - **"My Posts" now previews untitled notes.** A microblog note (no title) used to show as a bare
   "Untitled note"; the row now shows the note's body text so you can tell your posts apart. Needs a
