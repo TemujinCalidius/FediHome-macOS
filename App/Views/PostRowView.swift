@@ -46,7 +46,7 @@ struct PostRowView: View {
                             .fixedSize()
                     }
 
-                    PostContentView(post: post)
+                    PostContentView(html: post.contentHtml, fallback: post.content, cacheID: post.id)
 
                     if !mediaItems.isEmpty { mediaView }
                     if let embed { embedView(embed) }

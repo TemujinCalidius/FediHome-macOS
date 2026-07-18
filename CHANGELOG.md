@@ -17,6 +17,10 @@ is promoted to the new version and `main` is tagged `vX.Y.Z`.
   categories are slugified so a multi-word name like "Photo walk" posts as `photo-walk` instead of
   silently falling back to "general". Needs a FediHome instance that exposes `mediaCategories`
   (dev/#284); older instances keep plain free-text entry. (#61)
+- **Read a full post in My Posts.** Each row gains a chevron to expand and read the complete post
+  body inline — styled (links, bold, etc.), selectable, and untruncated — drafts included. Needs a
+  FediHome instance that returns `contentHtml` on `/api/posts` (FediHome#292); until then the
+  expander shows the short preview. (#65)
 
 ### Fixed
 - **"My Posts" now previews untitled notes.** A microblog note (no title) used to show as a bare
