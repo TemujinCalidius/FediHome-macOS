@@ -19,13 +19,13 @@ concurrency:
 jobs:
   build-test:
     name: Build & test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
 
-      - name: Select Xcode 16 (Swift 6 toolchain)
+      - name: Select Xcode 26 (Swift 6 toolchain)
         run: |
-          XC=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
           if [ -n "$XC" ]; then sudo xcode-select -s "$XC"; fi
           xcodebuild -version
           swift --version
