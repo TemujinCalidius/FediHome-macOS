@@ -6,17 +6,17 @@ compose posts with photos, video, audio, scheduling and drafts; manage your prof
 and get native notifications — a first-class desktop companion to your instance, living in your
 menu bar.
 
-[![Download](https://img.shields.io/badge/Download-macOS%2014%2B-blue)](https://github.com/TemujinCalidius/FediHome-macOS/releases/latest)
+[![Mac App Store](https://img.shields.io/badge/Mac_App_Store-Download-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/app/id6790605091)
+[![Direct Download](https://img.shields.io/badge/Direct_Download-macOS_14%2B-blue)](https://github.com/TemujinCalidius/FediHome-macOS/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/TemujinCalidius)
 
 ## Download
 
-**[⬇︎ Download the latest release](https://github.com/TemujinCalidius/FediHome-macOS/releases/latest)** —
-a **notarized** `.dmg`. Open it, drag **FediHome** to Applications, and launch. Requires **macOS 14
-(Sonoma) or later**. Because it's notarized by Apple, it opens with no security warnings.
+- 🍎 **[Mac App Store](https://apps.apple.com/app/id6790605091)** — one-click install with automatic updates. **Free.**
+- 💾 **[Direct download (`.dmg`)](https://github.com/TemujinCalidius/FediHome-macOS/releases/latest)** — a **notarized** disk image, no Apple account needed. Open it, drag **FediHome** to Applications, and launch.
 
-*(A Mac App Store listing is on the way; the direct download is the primary channel.)*
+Requires **macOS 14 (Sonoma) or later**. Both are Apple-notarized, so they open with no security warnings.
 
 ## Features
 
